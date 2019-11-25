@@ -42,6 +42,10 @@
 #include "esp-wifi/esp_wifi_netdev.h"
 #endif
 
+#ifdef MODULE_STM32_ETH
+#include "stm32_eth.h"
+#endif
+
 #include "lwip.h"
 
 #define ENABLE_DEBUG    (0)
@@ -64,6 +68,10 @@
 #endif
 
 #ifdef MODULE_ESP_WIFI     /* is mutual exclusive with above ifdef */
+#define LWIP_NETIF_NUMOF        (1)
+#endif
+
+#ifdef MODULE_STM32_ETH
 #define LWIP_NETIF_NUMOF        (1)
 #endif
 
@@ -90,6 +98,11 @@ static socket_zep_t socket_zep_devs[LWIP_NETIF_NUMOF];
 #ifdef MODULE_ESP_WIFI
 extern esp_wifi_netdev_t _esp_wifi_dev;
 extern void esp_wifi_setup (esp_wifi_netdev_t* dev);
+#endif
+
+#ifdef MODULE_STM32_ETH
+static netdev_t stm32eth;
+extern void stm32_eth_netdev_setup(netdev_t *netdev);
 #endif
 
 void lwip_bootstrap(void)
@@ -139,6 +152,20 @@ void lwip_bootstrap(void)
         DEBUG("Could not add esp_wifi device\n");
         return;
     }
+#elif defined(MODULE_STM32_ETH)
+    stm32_eth_netdev_setup(&stm32eth);
+#if LWIP_IPV4
+    if (netif_add(&netif[0], NULL, NULL, NULL, &stm32eth, lwip_netdev_init, tcpip_input) == NULL) {
+        DEBUG("Could not add stm32_eth device\n");
+        return;
+    }
+#else
+    if (netif_add(&netif[0], &stm32eth, lwip_netdev_init,
+                  tcpip_input) == NULL) {
+        DEBUG("Could not add stm32_eth device\n");
+        return;
+    }
+#endif
 #endif
     if (netif[0].state != NULL) {
         /* state is set to a netdev_t in the netif_add() functions above */
