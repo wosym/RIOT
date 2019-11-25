@@ -7,11 +7,15 @@
 #include "ip.h"
 
 
+//#define MODULE_STM32_ETH
+
 static int ifconfig(int argc, char **argv)
 {
     (void)argc;
     (void)argv;
+    puts("ifconfig IPV6");
     for (struct netif *iface = netif_list; iface != NULL; iface = iface->next) {
+        puts("test");
         printf("%s_%02u: ", iface->name, iface->num);
 #ifdef MODULE_LWIP_IPV6
         char addrstr[IPV6_ADDR_MAX_STR_LEN];
@@ -36,11 +40,12 @@ int main(void)
 {
     int ret = 0;
     char* ip = "fe80::9333:621c:1f7c:96fd";
+    //char* ip = "255.255.255.255";
     char prot = 41;
     char data[] = {50, 50, 50, 50};
     int dlen = 3;
     //Start shell
-    //char line_buf[SHELL_DEFAULT_BUFSIZE];
+    char line_buf[SHELL_DEFAULT_BUFSIZE];
 
     xtimer_usleep(2000000);
 
@@ -49,7 +54,7 @@ int main(void)
         puts("Error sending ip packet");
     else
         puts("ip packet sent");
-    //shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
+    shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
 
 
     return 0;

@@ -6,9 +6,6 @@
 # Set the name of your application:
 APPLICATION = lwip_ip_test
 
-# If no BOARD is found in the environment, use this default:
-BOARD ?= native
-
 # This has to be the absolute path to the RIOT base directory:
 RIOTBASE ?= $(CURDIR)/../../../RIOT
 
@@ -27,7 +24,9 @@ RIOTBASE ?= $(CURDIR)/../../../RIOT
 # Change this to 0 to show compiler invocation lines by default:
 QUIET ?= 1
 
+APP_IPV6 ?= 0
 
+BOARD := nucleo-f207zg
 BOARD_PROVIDES_NETIF := nucleo-f207zg
 
 # Modules to include:
@@ -38,30 +37,26 @@ USEMODULE += ps
 #USEMODULE += posix_headers
 #USEMODULE += xtimer
 
-USEMODULE += ipv6_addr
-USEMODULE += lwip_ipv6_autoconfig
+ifneq (0, $(APP_IPV6))
+ USEMODULE += ipv6_addr
+ USEMODULE += lwip_ipv6_autoconfig
+ CFLAGS += -DAPP_IPV6
+else
+ USEMODULE += ipv4_addr
+ USEMODULE += lwip_arp
+ USEMODULE += lwip_ipv4
+ CFLAGS += -DETHARP_SUPPORT_STATIC_ENTRIES=1
+endif
+
+
 USEMODULE += lwip_netdev
 USEMODULE += lwip_sock_udp
-USEMODULE += netdev_default
-USEMODULE += lwip lwip_ipv6_autoconfig lwip_sock_ip lwip_netdev
+USEMODULE += lwip lwip_sock_ip lwip_netdev
 USEMODULE += lwip_udp lwip_sock_udp
 USEMODULE += lwip_tcp lwip_sock_tcp
+#USEMODULE += inet_csum
+#USEMODULE += netdev_test
 
-# If your application is very simple and doesn't use modules that use
-# messaging, it can be disabled to save some memory:
-
-#DISABLE_MODULE += core_msg
-
-#INCLUDES += -Iapplication_include
-
-# Specify custom dependencies for your application here ...
-# APPDEPS = app_data.h config.h
+USEMODULE += netdev_default
 
 include $(RIOTBASE)/Makefile.include
-
-# ... and define them here (after including Makefile.include,
-# otherwise you modify the standard target):
-#proj_data.h: script.py data.tar.gz
-#	./script.py
-
-include $(RIOTMAKE)/default-radio-settings.inc.mk
