@@ -1,30 +1,19 @@
-###
-###
-###
-
-
 # Set the name of your application:
 APPLICATION = lwip_ip_test
 
 # This has to be the absolute path to the RIOT base directory:
 RIOTBASE ?= $(CURDIR)/../../../RIOT
 
-# Uncomment this to enable scheduler statistics for ps:
-#CFLAGS += -DSCHEDSTATISTICS
-
-# If you want to use native with valgrind, you should recompile native
-# with the target all-valgrind instead of all:
-# make -B clean all-valgrind
-
-# Uncomment this to enable code in RIOT that does safety checking
-# which is not needed in a production environment but helps in the
-# development process:
-#DEVELHELP = 1
-
 # Change this to 0 to show compiler invocation lines by default:
 QUIET ?= 1
 
 APP_IPV6 ?= 0
+
+ifneq (1, $(APP_IPV6))
+ IP_ADDR = \"192.168.0.21\"
+ NETMASK = \"255.255.255.0\"
+ GATEWAY = \"192.168.0.1\"
+endif
 
 BOARD := nucleo-f207zg
 BOARD_PROVIDES_NETIF := nucleo-f207zg
@@ -46,6 +35,9 @@ else
  USEMODULE += lwip_arp
  USEMODULE += lwip_ipv4
  CFLAGS += -DETHARP_SUPPORT_STATIC_ENTRIES=1
+ CFLAGS += -DIP_ADDR=$(IP_ADDR)
+ CFLAGS += -DNETMASK=$(NETMASK)
+ CFLAGS += -DGATEWAY=$(GATEWAY)
 endif
 
 
