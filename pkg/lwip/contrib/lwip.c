@@ -155,7 +155,18 @@ void lwip_bootstrap(void)
 #elif defined(MODULE_STM32_ETH)
     stm32_eth_netdev_setup(&stm32eth);
 #if LWIP_IPV4
-    if (netif_add(&netif[0], NULL, NULL, NULL, &stm32eth, lwip_netdev_init, tcpip_input) == NULL) {
+    ip_addr_t ip;
+    ip_addr_t nm;
+    ip_addr_t gw;
+
+    //manually setting IP's because it's not getting set automatically with link local. Maybe when there's actual DHCP
+    if(!ipaddr_aton(IP_ADDR, &ip))
+        return;
+    if(!ipaddr_aton(NETMASK, &nm))
+        return;
+    if(!ipaddr_aton(GATEWAY, &gw))
+        return;
+    if (netif_add(&netif[0], &ip, &nm, &gw, &stm32eth, lwip_netdev_init, tcpip_input) == NULL) {
         DEBUG("Could not add stm32_eth device\n");
         return;
     }

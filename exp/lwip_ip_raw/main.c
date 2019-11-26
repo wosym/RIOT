@@ -26,6 +26,13 @@ static int ifconfig(int argc, char **argv)
             }
         }
 #endif
+#ifndef APP_IPV6
+        printf("MAC: %u:%u:%u:%u:%u:%u\n", iface->hwaddr[0], iface->hwaddr[1], iface->hwaddr[2], iface->hwaddr[3], iface->hwaddr[4], iface->hwaddr[5]);
+
+        printf("\tIP: %s\n",\
+                ipaddr_ntoa(&iface->ip_addr));
+
+#endif
         puts("");
     }
     return 0;
@@ -46,6 +53,8 @@ int main(void)
     int dlen = 3;
     //Start shell
     char line_buf[SHELL_DEFAULT_BUFSIZE];
+
+    //printf("---%s---\n", NETMASK);
 
     xtimer_usleep(2000000);
 
