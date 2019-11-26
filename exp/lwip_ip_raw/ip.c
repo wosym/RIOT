@@ -9,6 +9,8 @@
 int ip_send_packet(char *addr_str, int nxt, char *data, int dlen)
 {
     int ret = 0;
+
+#ifdef APP_IPV6
     sock_ip_ep_t dst = SOCK_IPV6_EP_ANY;
 
     /* parse destination address */
@@ -16,6 +18,16 @@ int ip_send_packet(char *addr_str, int nxt, char *data, int dlen)
         puts("Error: unable to parse destination address");
         return 1;
     }
+#else
+    sock_ip_ep_t dst = SOCK_IPV4_EP_ANY;
+
+    /* parse destination address */
+    if (ipv4_addr_from_str((ipv4_addr_t *)&dst.addr.ipv4, addr_str) == NULL) {
+        puts("Error: unable to parse destination address");
+        return 1;
+    }
+
+#endif
 
     //xtimer_usleep(2000000);
 
