@@ -46,15 +46,14 @@ const shell_command_t shell_commands[] = {
 int main(void)
 {
     int ret = 0;
-    char* ip = "fe80::9333:621c:1f7c:96fd";
-    //char* ip = "255.255.255.255";
+    //char* ip = "fe80::9333:621c:1f7c:96fd";
+    //char* ip = "192.168.0.1";
+    char* ip = "169.254.73.148";
     char prot = 41;
     char data[] = {50, 50, 50, 50};
     int dlen = 3;
     //Start shell
     char line_buf[SHELL_DEFAULT_BUFSIZE];
-
-    //printf("---%s---\n", NETMASK);
 
     xtimer_usleep(2000000);
 
