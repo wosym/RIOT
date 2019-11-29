@@ -2,6 +2,7 @@
 #define _DOIP_H_
 
 #include <stdint.h>
+#include <stdio.h>  //TODO: remove
 
 /*
  * All DoIP layer services have the same general format. Service primitives are written in the form:
@@ -21,6 +22,7 @@
 
 #define DoIP_MAX_MSG_LEN 2048   //NOTE: Spec defines max as 2^32 (~4GB), but this feels like a bad idea to implement on an embedded device...
 #define DoIP_VERSION    0x02
+#define DoIP_HDR_LEN    12
 
 /* ########################*/
 
@@ -89,6 +91,10 @@ int DoIP_Data_confirm(DoIP_SA source, DoIP_TA target, DoIP_TAType target_type, D
 int DoIP_Data_indication(DoIP_SA source, DoIP_TA target, DoIP_TAType target_type, uint8_t* data, uint32_t dlen, DoIP_Result result);
 
 /* ################################ */
+
+
+// TEMPORARY !!!
+void test_funcc(void);
 
 
 //TODO: define headers for empty optional parameters
