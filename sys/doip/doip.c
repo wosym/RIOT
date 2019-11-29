@@ -16,18 +16,9 @@ static void doip_print_msg(uint8_t* data, uint32_t dlen)
     printf("\n");
 }
 
-int doip_data_request(doip_sa sa, doip_ta ta, doip_tat tat , uint8_t* data, uint32_t dlen)
+//int doip_data_request(doip_sa sa, doip_ta ta, doip_tat tat , uint8_t* data, uint32_t dlen)
+int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t* data, uint32_t dlen)
 {
-    (void) tat;             //TODO: what to do with this?
-
-    uint16_t payload_type = 0x8001; //TODO: variable?
-    uint32_t payload_len = dlen;    //actual doip payload (so not including TA/SA)
-
-
-    printf("entering DDR block\n");
-
-    if(tat >= doip_tat_MAX)
-        return -1;
     if(data == NULL && dlen != 0)
         return -1;
 
@@ -39,10 +30,10 @@ int doip_data_request(doip_sa sa, doip_ta ta, doip_tat tat , uint8_t* data, uint
     dbuf[2] = (payload_type >> 8);          //Byte 2 - 3: Payload type
     dbuf[3] = (payload_type & 0xFF);
 
-    dbuf[4] = ((payload_len >> 24) & 0xFF); //Byte 4 - 7: Payload length
-    dbuf[5] = ((payload_len >> 16) & 0xFF);
-    dbuf[6] = ((payload_len >> 8) & 0xFF);
-    dbuf[7] = (payload_len & 0xFF);
+    dbuf[4] = ((dlen >> 24) & 0xFF); //Byte 4 - 7: Payload length
+    dbuf[5] = ((dlen >> 16) & 0xFF);
+    dbuf[6] = ((dlen >> 8) & 0xFF);
+    dbuf[7] = (dlen & 0xFF);
 
     dbuf[8] = (sa >> 8);                 //Byte 8 - 9: Source Adress
     dbuf[9] = (sa & 0xFF);
