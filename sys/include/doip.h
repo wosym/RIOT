@@ -2,14 +2,13 @@
 #define _DOIP_H_
 
 #include <stdint.h>
-#include <stdio.h>  //TODO: remove
 
 /*
  * All DoIP layer services have the same general format. Service primitives are written in the form:
  * service_name.type(parameter A, parameter B [, parameter C, ...])
  *
- * where “service_name” is the name of the service, e.g. _DoIP_Data; “type” indicates the type of the service
- * primitive; and “parameter A, parameter B, [parameter C, ...]” are the DoIP_SDU as a list of values passed by
+ * where “service_name” is the name of the service, e.g. _doip_data; “type” indicates the type of the service
+ * primitive; and “parameter A, parameter B, [parameter C, ...]” are the doip_SDU as a list of values passed by
  * the service primitive. The brackets indicate that this part of the parameter list may be empty.
  *
  * Available service primitives:
@@ -20,9 +19,9 @@
 
 /* ##### DoIP constants ####*/
 
-#define DoIP_MAX_MSG_LEN 2048   //NOTE: Spec defines max as 2^32 (~4GB), but this feels like a bad idea to implement on an embedded device...
-#define DoIP_VERSION    0x02
-#define DoIP_HDR_LEN    12
+#define DOIP_MAX_MSG_LEN 2048   //NOTE: Spec defines max as 2^32 (~4GB), but this feels like a bad idea to implement on an embedded device...
+#define DOIP_VERSION    0x02
+#define DOIP_HDR_LEN    12
 
 /* ########################*/
 
@@ -30,71 +29,67 @@
 /* ##### DoIP Types #### */
 
 /**
- * @brief DoIP logical source address
+ * @brief doip logical sa address
  */
-typedef uint16_t DoIP_SA;
+typedef uint16_t doip_sa;
 
 /**
- * @brief DoIP logical target address
+ * @brief doip logical ta address
  */
-typedef uint16_t DoIP_TA;
+typedef uint16_t doip_ta;
 
 /**
- * @brief DoIP logical target address type
+ * @brief doip logical ta address type
  *
- * @detailed Extension to the DoIP_TA parameter.
+ * @detailed Extension to the doip_ta parameter.
  *      It is used to encode the communication model used by the communicating
- *      peer entities of the DoIP layer.  Two communication models are specified:
+ *      peer entities of the doip layer.  Two communication models are specified:
  *      1 to 1 communication, called physical addressing (unicast), and 1 to n
  *      communication, called functional addressing (multicast/broadcast).
  */
-typedef enum DoIP_TAType{physical, functional, DoIP_TAType_MAX} DoIP_TAType;
+typedef enum doip_tat{physical, functional, doip_tat_MAX} doip_tat;
 
 /**
  * @brief Outcome of service execution
  *
  * @detailed Outcome of service execution. If two or more errors are discoverd at the same time, the parameter first found in this list will be given
  */
-typedef enum DoIP_Result{
-    DoIP_OK,
-    DoIP_HDR_ERROR,
-    DoIP_TIMEOUT_A,
-    DoIP_UNKNOWN_SA,
-    DoIP_INVALID_SA,
-    DoIP_UNKNOWN_TA,
-    DoIP_MESSAGE_TOO_LARGE,
-    DoIP_OUT_OF_MEMORY,
-    DoIP_TARGET_UNREACHABLE,
-    DoIP_NO_LINK,
-    DoIP_NO_SOCKET,
-    DoIP_ERROR
-} DoIP_Result;
+typedef enum doip_result{
+    DOIP_OK,
+    DOIP_HDR_ERROR,
+    DOIP_TIMEOUT_A,
+    DOIP_UNKNOWN_SA,
+    DOIP_INVALID_SA,
+    DOIP_UNKNOWN_TA,
+    DOIP_MESSAGE_TOO_LARGE,
+    DOIP_OUT_OF_MEMORY,
+    DOIP_taRGET_UNREACHABLE,
+    DOIP_NO_LINK,
+    DOIP_NO_SOCKET,
+    DOIP_ERROR
+} doip_result;
 
 /* ####################*/
 
 
-/* ####### DoIP Functions ########## */
+/* ####### doip Functions ########## */
 
 /*
  * @brief request transmission of <data> with <dlen> bytes
  */
-int DoIP_Data_request(DoIP_SA source, DoIP_TA target, DoIP_TAType target_type , uint8_t* data, uint32_t dlen);
+int doip_data_request(doip_sa sa, doip_ta ta, doip_tat tat , uint8_t* data, uint32_t dlen);
 
 /*
- * @brief confirm completion of DoIP_Data.request
+ * @brief confirm completion of doip_data.request
  */
-int DoIP_Data_confirm(DoIP_SA source, DoIP_TA target, DoIP_TAType target_type, DoIP_Result result);
+int doip_data_confirm(doip_sa sa, doip_ta ta, doip_tat tat, doip_result res);
 
 /*
  * @brief
  */
-int DoIP_Data_indication(DoIP_SA source, DoIP_TA target, DoIP_TAType target_type, uint8_t* data, uint32_t dlen, DoIP_Result result);
+int doip_data_indication(doip_sa sa, doip_ta ta, doip_tat tat, uint8_t* data, uint32_t dlen, doip_result res);
 
 /* ################################ */
-
-
-// TEMPORARY !!!
-void test_funcc(void);
 
 
 //TODO: define headers for empty optional parameters
