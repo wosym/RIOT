@@ -19,6 +19,8 @@ static void doip_print_msg(uint8_t* data, uint32_t dlen)
 //int doip_data_request(doip_sa sa, doip_ta ta, doip_tat tat , uint8_t* data, uint32_t dlen)
 int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t* data, uint32_t dlen)
 {
+    uint32_t payload_len = dlen + 4;    //TA and SA should also be included in the payload length!
+    int msglen = 0;     //Total length of message to be sent over UDP
     if(data == NULL && dlen != 0)
         return -1;
 
@@ -30,23 +32,31 @@ int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t* data, 
     dbuf[2] = (payload_type >> 8);          //Byte 2 - 3: Payload type
     dbuf[3] = (payload_type & 0xFF);
 
-    dbuf[4] = ((dlen >> 24) & 0xFF); //Byte 4 - 7: Payload length
-    dbuf[5] = ((dlen >> 16) & 0xFF);
-    dbuf[6] = ((dlen >> 8) & 0xFF);
-    dbuf[7] = (dlen & 0xFF);
+    dbuf[4] = ((payload_len >> 24) & 0xFF); //Byte 4 - 7: Payload length
+    dbuf[5] = ((payload_len >> 16) & 0xFF);
+    dbuf[6] = ((payload_len >> 8) & 0xFF);
+    dbuf[7] = (payload_len & 0xFF);
 
-    dbuf[8] = (sa >> 8);                 //Byte 8 - 9: Source Adress
-    dbuf[9] = (sa & 0xFF);
+    msglen += 8;
 
-    dbuf[10] = (ta >> 8);               //Byte 10 - 11: Target Adress
-    dbuf[11] = (ta & 0xFF);
+    if(payload_type != 0x0001) {    //No SA and TA sent with VID req
+        dbuf[8] = (sa >> 8);                 //Byte 8 - 9: Source Adress
+        dbuf[9] = (sa & 0xFF);
 
-    if(dlen > 0)
+        dbuf[10] = (ta >> 8);               //Byte 10 - 11: Target Adress
+        dbuf[11] = (ta & 0xFF);
+
+        msglen += 4;
+    }
+
+    if(dlen > 0) {
         memcpy(&dbuf[12], data , dlen);         //Byte 12 - 13+dlen: data
+        msglen += dlen;
+    }
 
 
     printf("doip Message to be sent: \n");
-    doip_print_msg(dbuf, dlen+12);
+    doip_print_msg(dbuf, msglen);
 
     //TODO: seperate function for the actual sending?
 
@@ -56,7 +66,7 @@ int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t* data, 
     remote.port = 13400;
     ipv4_addr_from_str((ipv4_addr_t *)&remote.addr.ipv4, "169.254.73.148");
 
-    if((ret = sock_udp_send(NULL, dbuf, dlen + DOIP_HDR_LEN, &remote)) < 0) {
+    if((ret = sock_udp_send(NULL, dbuf, msglen, &remote)) < 0) {
         puts("Error sending datagram");
         printf("Err: %d\n", ret );      //22 = EINVAL --> invalid argument
         return -1;
