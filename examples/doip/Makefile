@@ -17,9 +17,9 @@ QUIET ?= 1
 
 USEMODULE += doip
 
-IP_ADDR = \"192.168.0.21\"
+IP_ADDR = \"169.254.73.149\"
 NETMASK = \"255.255.255.0\"
-GATEWAY = \"192.168.0.1\"
+GATEWAY = \"169.254.73.148\"
 USEMODULE += ipv4_addr
 USEMODULE += lwip_arp
 USEMODULE += lwip_ipv4
