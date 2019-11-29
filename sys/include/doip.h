@@ -72,7 +72,7 @@ typedef enum doip_result{
 /* ####################*/
 
 
-/* ####### doip Functions ########## */
+/* ####### DoIP Functions ########## */
 
 /*
  * @brief request transmission of <data> with <dlen> bytes
@@ -85,9 +85,15 @@ int doip_data_request(doip_sa sa, doip_ta ta, doip_tat tat , uint8_t* data, uint
 int doip_data_confirm(doip_sa sa, doip_ta ta, doip_tat tat, doip_result res);
 
 /*
- * @brief
+ * @brief reply with requested data
  */
 int doip_data_indication(doip_sa sa, doip_ta ta, doip_tat tat, uint8_t* data, uint32_t dlen, doip_result res);
+
+/*
+ * @brief raw UDP send function for DoIP messages
+ * TODO: make static once we're out of development
+ */
+int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t* data, uint32_t dlen);
 
 /* ################################ */
 
