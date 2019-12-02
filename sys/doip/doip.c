@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "net/sock/udp.h"
+#include "xtimer.h"
 
 //data buffer for doip message
 uint8_t dbuf[DOIP_MAX_MSG_LEN];
@@ -19,8 +20,21 @@ static void doip_print_msg(uint8_t* data, uint32_t dlen)
 //int doip_data_request(doip_sa sa, doip_ta ta, doip_tat tat , uint8_t* data, uint32_t dlen)
 int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t* data, uint32_t dlen)
 {
+    int ret = 0;
+    sock_udp_ep_t remote = SOCK_IPV4_EP_ANY;
+    sock_udp_ep_t local = SOCK_IPV4_EP_ANY;
+    sock_udp_t sock;
+    local.port = 41123;
+
     uint32_t payload_len = dlen + 4;    //TA and SA should also be included in the payload length!
     int msglen = 0;     //Total length of message to be sent over UDP
+
+    uint8_t buf[50] = {'\0'};
+    if(sock_udp_create(&sock, &local, NULL, 0)) {
+            puts("Error creating UDP sock");
+            return 1;
+        }
+
     if(data == NULL && dlen != 0)
         return -1;
 
@@ -54,23 +68,37 @@ int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t* data, 
         msglen += dlen;
     }
 
-
     printf("doip Message to be sent: \n");
     doip_print_msg(dbuf, msglen);
 
-    //TODO: seperate function for the actual sending?
-
-    sock_udp_ep_t remote = SOCK_IPV4_EP_ANY;
-    int ret = 0;
 
     remote.port = 13400;
     ipv4_addr_from_str((ipv4_addr_t *)&remote.addr.ipv4, "169.254.73.148");
 
-    if((ret = sock_udp_send(NULL, dbuf, msglen, &remote)) < 0) {
+    if((ret = sock_udp_send(&sock, dbuf, msglen, &remote)) < 0) {
         puts("Error sending datagram");
         printf("Err: %d\n", ret );      //22 = EINVAL --> invalid argument
         return -1;
     }
+
+    if((ret = sock_udp_recv(&sock, buf, sizeof(buf), 1 * US_PER_SEC, NULL)) < 0) {
+        if (ret == -ETIMEDOUT) {
+            puts("Timed out");
+        } else {
+            puts("Error receiving message");
+        }
+    } else {
+        printf("Receiving message: \"");
+        for(int i = 0; i < ret; i++)
+        {
+            printf("0x%x ", buf[i]);
+        }
+        printf("\"\n");
+    }
+
+    sock_udp_close(&sock);
+    xtimer_sleep(1);
+
 
 
     return 0;

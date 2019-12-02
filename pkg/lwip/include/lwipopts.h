@@ -139,6 +139,7 @@ extern "C" {
 
 #define LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS
 #define MEMP_MEM_MALLOC         (1)
+//#define MEMP_MEM_MALLOC         (0)
 #define NETIF_MAX_HWADDR_LEN    (GNRC_NETIF_HDR_L2ADDR_MAX_LEN)
 
 #define TCPIP_THREAD_STACKSIZE  (THREAD_STACKSIZE_DEFAULT)
@@ -157,6 +158,7 @@ extern "C" {
 /* packet buffer size of GNRC + stack for TCP/IP */
 #define MEM_SIZE                (TCPIP_THREAD_STACKSIZE + 6144)
 #endif
+
 
 /** @} */
 
