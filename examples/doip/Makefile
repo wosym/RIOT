@@ -35,4 +35,7 @@ USEMODULE += lwip_tcp lwip_sock_tcp
 USEMODULE += netdev_default
 USEMODULE += xtimer
 
+#CFLAGS += -DMEM_USE_POOLS=1 -DMEMP_USE_CUSTOM_POOLS=1
+
+
 include $(RIOTBASE)/Makefile.include

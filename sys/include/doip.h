@@ -19,7 +19,7 @@
 
 /* ##### DoIP constants ####*/
 
-#define DOIP_MAX_MSG_LEN 2048   //NOTE: Spec defines max as 2^32 (~4GB), but this feels like a bad idea to implement on an embedded device...
+#define DOIP_MAX_MSG_LEN 512   //NOTE: Spec defines max as 2^32 (~4GB), but this feels like a bad idea to implement on an embedded device...
 #define DOIP_VERSION    0x02
 #define DOIP_HDR_LEN    12
 

@@ -12,6 +12,10 @@
 
 int main(void)
 {
+    doip_sa source = 0xe801;
+    doip_ta target = 0x1fff;
+    uint16_t req_tester_present = 0x8001;           //TODO: implement these as enum in header
+    uint16_t vehicle_present_request = 0x0001;
     puts("Starting doip example");
     //uint8_t testdata[] = {0xaa, 0xab, 0xac};
     uint8_t uds_data[] = {0x3e, 0x80};
@@ -19,7 +23,10 @@ int main(void)
     puts("Sending ");
     //doip_data_request(0, 0, physical, NULL, 0);
     //doip_data_request(0xabcd, 0xdcba, physical, testdata , 3);
-    doip_send_udp(0xe801, 0x1fff, 0x8001, uds_data , 6);
-    doip_send_udp(0, 0, 0x0001, NULL , 0);  //Sending vehicle identification request --> SA and TA ignored
+    while(1) {
+        doip_send_udp(source, target, req_tester_present, uds_data , 6);
+        doip_send_udp(0, 0, vehicle_present_request, NULL , 0);  //Sending vehicle identification request --> SA and TA ignored
+        xtimer_usleep(1000000);
+    }
     return 0;
 }
