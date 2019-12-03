@@ -136,7 +136,7 @@ int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t* data, 
 
 
     remote.port = 13400;
-    ipv4_addr_from_str((ipv4_addr_t *)&remote.addr.ipv4, "169.254.73.148");
+    ipv4_addr_from_str((ipv4_addr_t *)&remote.addr.ipv4, "169.254.161.102");
 
     if((ret = sock_udp_send(&sock, dbuf, msglen, &remote)) < 0) {
         puts("Error sending datagram");

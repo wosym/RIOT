@@ -51,6 +51,10 @@
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
+#ifdef USE_DHCP
+#include <lwip/dhcp.h>
+#endif
+
 #ifdef MODULE_NETDEV_TAP
 #define LWIP_NETIF_NUMOF        (NETDEV_TAP_MAX)
 #endif
@@ -155,6 +159,7 @@ void lwip_bootstrap(void)
 #elif defined(MODULE_STM32_ETH)
     stm32_eth_netdev_setup(&stm32eth);
 #if LWIP_IPV4
+#ifndef USE_DHCP
     ip_addr_t ip;
     ip_addr_t nm;
     ip_addr_t gw;
@@ -170,6 +175,21 @@ void lwip_bootstrap(void)
         DEBUG("Could not add stm32_eth device\n");
         return;
     }
+#else   /* Use DHCP */
+    int ret = 0;
+    if (netif_add(&netif[0], NULL, NULL, NULL, &stm32eth, lwip_netdev_init, tcpip_input) == NULL) {
+        DEBUG("Could not add stm32_eth device\n");
+        return;
+    }
+    ret = dhcp_start(&netif[0]);
+    printf("DHCP_start ret: %d\n", ret);
+    if(ret == ERR_ARG)
+        puts("Illegal argument");
+    sys_check_timeouts();
+    ret = dhcp_supplied_address(&netif[0]);
+    printf("DHCP_supplied_address ret: %d\n", ret);
+
+#endif
 #else
     if (netif_add(&netif[0], &stm32eth, lwip_netdev_init,
                   tcpip_input) == NULL) {
