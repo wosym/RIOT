@@ -18,6 +18,7 @@ int main(void)
 
     puts("Starting doip example");
     xtimer_usleep(2000000);     //necesarry for some reason when sending UDP
+    xtimer_usleep(8000000);     //necesarry for some reason when sending UDP
 
     while(1) {
         doip_send_udp(source, target, DOIP_DIAGNOSTIC_MESSAGE, uds_data , 2);

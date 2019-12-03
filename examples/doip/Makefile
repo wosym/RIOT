@@ -37,5 +37,7 @@ USEMODULE += xtimer
 
 #CFLAGS += -DMEM_USE_POOLS=1 -DMEMP_USE_CUSTOM_POOLS=1
 
+#USEMODULE += lwip_dhcp
+#CFLAGS += -DUSE_DHCP
 
 include $(RIOTBASE)/Makefile.include
