@@ -36,8 +36,17 @@ static int doip_print_msg_parsed(uint8_t* data, uint32_t dlen)
     payload_type = (data[2] << 8 | data[3]);
     //printf("payload_type: %x\n", payload_type);
     switch(payload_type) {
+        case DOIP_GENERIC_DOIP_HEADER_NEGATIVE_ACK:
+            puts("Payload Type: Generic negative ACK");
+            break;
         case DOIP_VEHICLE_IDENTIFICATION_REQUEST:
             puts("Payload Type: Vehicle Identification Request");
+            break;
+        case DOIP_VEHICLE_IDENTIFICATION_REQUEST_WITH_VIN:
+            puts("Payload Type: Vehicle Identification Request with VIN");
+            break;
+        case DOIP_VEHICLE_IDENTIFICATION_REQUEST_WITH_EID:
+            puts("Payload Type: Vehicle Identification Request with EID");
             break;
         case DOIP_VEHICLE_IDENTIFCATION_RESPONSE:
             puts("Payload Type: Vehicle Identification Reply");
@@ -48,6 +57,7 @@ static int doip_print_msg_parsed(uint8_t* data, uint32_t dlen)
         case DOIP_DIAGNOSTIC_MESSAGE_POSITIVE_ACK:
             puts("Payload Type: Diagnostic Message Positive Acknowledge");
             break;
+
         //TODO: implement others!
         default:
             puts("Unknown payload type");
@@ -79,7 +89,7 @@ static int doip_print_msg_parsed(uint8_t* data, uint32_t dlen)
 
 
 //int doip_data_request(doip_sa sa, doip_ta ta, doip_tat tat , uint8_t* data, uint32_t dlen)
-int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t* data, uint32_t dlen)
+int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t* data, uint32_t dlen, char* ip_addr)
 {
     int ret = 0;
     sock_udp_ep_t remote = SOCK_IPV4_EP_ANY;
@@ -136,7 +146,7 @@ int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t* data, 
 
 
     remote.port = 13400;
-    ipv4_addr_from_str((ipv4_addr_t *)&remote.addr.ipv4, "169.254.161.102");
+    ipv4_addr_from_str((ipv4_addr_t *)&remote.addr.ipv4, ip_addr);    //TODO: pass this ip with function call!
 
     if((ret = sock_udp_send(&sock, dbuf, msglen, &remote)) < 0) {
         puts("Error sending datagram");

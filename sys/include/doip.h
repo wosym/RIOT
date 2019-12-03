@@ -159,7 +159,7 @@ int doip_data_indication(doip_sa sa, doip_ta ta, doip_tat tat, uint8_t* data, ui
  * @brief raw UDP send function for DoIP messages
  * TODO: make static once we're out of development
  */
-int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t* data, uint32_t dlen);
+int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t* data, uint32_t dlen, char* ip_addr);
 
 /* ################################ */
 
