@@ -42,6 +42,6 @@ USEMODULE += shell
 #CFLAGS += -DMEM_USE_POOLS=1 -DMEMP_USE_CUSTOM_POOLS=1
 
 USEMODULE += lwip_dhcp
-CFLAGS += -DUSE_DHCP
+CFLAGS += -DUSE_DHCP    #necesarry because we don't want the regular bootstrap code to run
 
 include $(RIOTBASE)/Makefile.include
