@@ -37,10 +37,11 @@ USEMODULE += lwip_udp lwip_sock_udp
 USEMODULE += lwip_tcp lwip_sock_tcp
 USEMODULE += netdev_default
 USEMODULE += xtimer
+USEMODULE += shell
 
 #CFLAGS += -DMEM_USE_POOLS=1 -DMEMP_USE_CUSTOM_POOLS=1
 
-#USEMODULE += lwip_dhcp
-#CFLAGS += -DUSE_DHCP
+USEMODULE += lwip_dhcp
+CFLAGS += -DUSE_DHCP
 
 include $(RIOTBASE)/Makefile.include

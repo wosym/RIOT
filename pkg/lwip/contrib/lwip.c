@@ -105,7 +105,7 @@ extern void esp_wifi_setup (esp_wifi_netdev_t* dev);
 #endif
 
 #ifdef MODULE_STM32_ETH
-static netdev_t stm32eth;
+//static netdev_t stm32eth;
 extern void stm32_eth_netdev_setup(netdev_t *netdev);
 #endif
 
@@ -157,7 +157,7 @@ void lwip_bootstrap(void)
         return;
     }
 #elif defined(MODULE_STM32_ETH)
-    stm32_eth_netdev_setup(&stm32eth);
+    //stm32_eth_netdev_setup(&stm32eth);
 #if LWIP_IPV4
 #ifndef USE_DHCP
     ip_addr_t ip;
@@ -176,6 +176,7 @@ void lwip_bootstrap(void)
         return;
     }
 #else   /* Use DHCP */
+    /*
     int ret = 0;
     if (netif_add(&netif[0], NULL, NULL, NULL, &stm32eth, lwip_netdev_init, tcpip_input) == NULL) {
         DEBUG("Could not add stm32_eth device\n");
@@ -188,6 +189,7 @@ void lwip_bootstrap(void)
     sys_check_timeouts();
     ret = dhcp_supplied_address(&netif[0]);
     printf("DHCP_supplied_address ret: %d\n", ret);
+    */
 
 #endif
 #else

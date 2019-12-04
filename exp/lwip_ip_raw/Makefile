@@ -10,13 +10,15 @@ QUIET ?= 1
 APP_IPV6 ?= 0
 
 ifneq (1, $(APP_IPV6))
- IP_ADDR = \"192.168.0.21\"
+ IP_ADDR = \"192.168.1.21\"
  NETMASK = \"255.255.255.0\"
- GATEWAY = \"192.168.0.1\"
+ GATEWAY = \"192.168.1.1\"
 endif
 
 BOARD := nucleo-f207zg
 BOARD_PROVIDES_NETIF := nucleo-f207zg
+
+DEBUG = 1
 
 # Modules to include:
 
@@ -50,5 +52,10 @@ USEMODULE += lwip_tcp lwip_sock_tcp
 #USEMODULE += netdev_test
 
 USEMODULE += netdev_default
+
+USEMODULE += lwip_dhcp
+CFLAGS += -DUSE_DHCP
+
+#CFLAGS += -DMEM_USE_POOLS=1 -DMEMP_USE_CUSTOM_POOLS=1
 
 include $(RIOTBASE)/Makefile.include
