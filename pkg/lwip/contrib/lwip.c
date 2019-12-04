@@ -156,10 +156,10 @@ void lwip_bootstrap(void)
         DEBUG("Could not add esp_wifi device\n");
         return;
     }
-#elif defined(MODULE_STM32_ETH)
-    //stm32_eth_netdev_setup(&stm32eth);
-#if LWIP_IPV4
 #ifndef USE_DHCP
+#elif defined(MODULE_STM32_ETH)
+    stm32_eth_netdev_setup(&stm32eth);
+#if LWIP_IPV4
     ip_addr_t ip;
     ip_addr_t nm;
     ip_addr_t gw;
