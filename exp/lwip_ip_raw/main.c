@@ -6,6 +6,9 @@
 #include "xtimer.h"
 #include "ip.h"
 
+#include <lwip/dhcp.h>
+#include "lwip/netif/netdev.h"
+#include "stm32_eth.h"
 
 //#define MODULE_STM32_ETH
 
@@ -13,7 +16,7 @@ static int ifconfig(int argc, char **argv)
 {
     (void)argc;
     (void)argv;
-    puts("ifconfig IPV6");
+    puts("ifconfig");
     for (struct netif *iface = netif_list; iface != NULL; iface = iface->next) {
         puts("test");
         printf("%s_%02u: ", iface->name, iface->num);
@@ -48,7 +51,7 @@ int main(void)
     int ret = 0;
     //char* ip = "fe80::9333:621c:1f7c:96fd";
     //char* ip = "192.168.0.1";
-    char* ip = "169.254.73.148";
+    char* ip = "192.168.1.122";
     char prot = 41;
     char data[] = {50, 50, 50, 50};
     int dlen = 3;
@@ -56,6 +59,26 @@ int main(void)
     char line_buf[SHELL_DEFAULT_BUFSIZE];
 
     xtimer_usleep(2000000);
+    xtimer_usleep(2000000);
+
+    static netdev_t stm32eth;
+    extern void stm32_eth_netdev_setup(netdev_t *netdev);
+    static struct netif netif[1];
+    stm32_eth_netdev_setup(&stm32eth);
+
+
+    if (netif_add(&netif[0], IP4_ADDR_ANY, IP4_ADDR_ANY, IP4_ADDR_ANY, &stm32eth, lwip_netdev_init, tcpip_input) == NULL) {
+        puts("Could not add stm32_eth device\n");
+        return -1;
+    }
+    xtimer_usleep(2000000);
+    ret = dhcp_start(&netif[0]);
+    printf("DHCP_start ret: %d\n", ret);
+    if(ret == ERR_ARG)
+        puts("Illegal argument");
+    sys_check_timeouts();
+    ret = dhcp_supplied_address(&netif[0]);
+    printf("DHCP_supplied_address ret: %d\n", ret);
 
     ret = ip_send_packet(ip, prot, data, dlen);
     if(ret)
