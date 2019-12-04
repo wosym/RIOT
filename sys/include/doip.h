@@ -142,6 +142,7 @@ typedef enum doip_result{
 
 /*
  * @brief request transmission of <data> with <dlen> bytes
+ *
  */
 int doip_data_request(doip_sa sa, doip_ta ta, doip_tat tat , uint8_t* data, uint32_t dlen);
 
@@ -157,6 +158,13 @@ int doip_data_indication(doip_sa sa, doip_ta ta, doip_tat tat, uint8_t* data, ui
 
 /*
  * @brief raw UDP send function for DoIP messages
+ *
+ * @param[in]       sa              Source Adress
+ * @param[in]       ta              Target Address
+ * @param[in]       payload_type    Type of DoIP message in payload
+ * @param[in]       data            UDS bytes to be added as payload to DoIP message
+ * @param[in]       ip_addr         IP address the message should be sent to
+ *
  * TODO: make static once we're out of development
  */
 int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t* data, uint32_t dlen, char* ip_addr);

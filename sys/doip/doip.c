@@ -86,9 +86,6 @@ static int doip_print_msg_parsed(uint8_t* data, uint32_t dlen)
 
 }
 
-
-
-//int doip_data_request(doip_sa sa, doip_ta ta, doip_tat tat , uint8_t* data, uint32_t dlen)
 int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t* data, uint32_t dlen, char* ip_addr)
 {
     int ret = 0;
@@ -146,7 +143,7 @@ int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t* data, 
 
 
     remote.port = 13400;
-    ipv4_addr_from_str((ipv4_addr_t *)&remote.addr.ipv4, ip_addr);    //TODO: pass this ip with function call!
+    ipv4_addr_from_str((ipv4_addr_t *)&remote.addr.ipv4, ip_addr);
 
     if((ret = sock_udp_send(&sock, dbuf, msglen, &remote)) < 0) {
         puts("Error sending datagram");
