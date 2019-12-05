@@ -105,7 +105,7 @@ extern void esp_wifi_setup(esp_wifi_netdev_t *dev);
 #endif
 
 #ifdef MODULE_STM32_ETH
-//static netdev_t stm32eth;
+static netdev_t stm32eth;
 extern void stm32_eth_netdev_setup(netdev_t *netdev);
 #endif
 
@@ -156,15 +156,15 @@ void lwip_bootstrap(void)
         DEBUG("Could not add esp_wifi device\n");
         return;
     }
-#ifndef USE_DHCP
 #elif defined(MODULE_STM32_ETH)
     stm32_eth_netdev_setup(&stm32eth);
 #if LWIP_IPV4
+#ifndef USE_DHCP
     ip_addr_t ip;
     ip_addr_t nm;
     ip_addr_t gw;
 
-    //manually setting IP's because it's not getting set automatically with link local. Maybe when there's actual DHCP
+    //manually setting IP's because it's not getting set automatically with link local. 
     if (!ipaddr_aton(IP_ADDR, &ip)) {
         return;
     }
@@ -180,7 +180,12 @@ void lwip_bootstrap(void)
         return;
     }
 #else   /* Use DHCP */
-    //Do nothing: when using DHCP, the user needs to initialize the ethernet-interface AND the dhcp-service!
+    //enabling interface without IP --> DHCP needs to be called by user
+    if (netif_add(&netif[0], IP4_ADDR_ANY, IP4_ADDR_ANY, IP4_ADDR_ANY,
+                  &stm32eth, lwip_netdev_init, tcpip_input) == NULL) {
+        puts("Could not add stm32_eth device\n");
+        return;
+    }
 #endif
 #else
     if (netif_add(&netif[0], &stm32eth, lwip_netdev_init,

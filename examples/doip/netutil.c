@@ -1,27 +1,17 @@
 #include "netutil.h"
 
-//code moved from lwip_bootstrap to here, to make it work. TODO: needs proper solution!
 int start_dhcp(void)
 {
-    static netdev_t stm32eth;
-    extern void stm32_eth_netdev_setup(netdev_t *netdev);
-    static struct netif netif[1];
-
-    stm32_eth_netdev_setup(&stm32eth);
     int ret = 0;
+    struct netif *netif = netif_find("ET");
 
-    if (netif_add(&netif[0], IP4_ADDR_ANY, IP4_ADDR_ANY, IP4_ADDR_ANY,
-                  &stm32eth, lwip_netdev_init, tcpip_input) == NULL) {
-        puts("Could not add stm32_eth device\n");
-        return -1;
-    }
-    ret = dhcp_start(&netif[0]);
+    ret = dhcp_start(netif);
     if (ret) {
         printf("DHCP_start ret: %d\n", ret);
         return -1;
     }
     sys_check_timeouts();
-    ret = dhcp_supplied_address(&netif[0]);
+    ret = dhcp_supplied_address(netif);
     if (ret) {
         printf("DHCP_supplied_address ret: %d\n", ret);
         return -1;
