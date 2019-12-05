@@ -111,7 +111,7 @@ typedef uint16_t doip_ta;
  *      1 to 1 communication, called physical addressing (unicast), and 1 to n
  *      communication, called functional addressing (multicast/broadcast).
  */
-typedef enum doip_tat {physical, functional, doip_tat_MAX} doip_tat;
+typedef enum doip_tat { physical, functional, doip_tat_MAX } doip_tat;
 
 /**
  * @brief Outcome of service execution
@@ -119,18 +119,18 @@ typedef enum doip_tat {physical, functional, doip_tat_MAX} doip_tat;
  * @detailed Outcome of service execution. If two or more errors are discoverd at the same time, the parameter first found in this list will be given
  */
 typedef enum doip_result {
-        DOIP_OK,
-        DOIP_HDR_ERROR,
-        DOIP_TIMEOUT_A,
-        DOIP_UNKNOWN_SA,
-        DOIP_INVALID_SA,
-        DOIP_UNKNOWN_TA,
-        DOIP_MESSAGE_TOO_LARGE,
-        DOIP_OUT_OF_MEMORY,
-        DOIP_taRGET_UNREACHABLE,
-        DOIP_NO_LINK,
-        DOIP_NO_SOCKET,
-        DOIP_ERROR
+    DOIP_OK,
+    DOIP_HDR_ERROR,
+    DOIP_TIMEOUT_A,
+    DOIP_UNKNOWN_SA,
+    DOIP_INVALID_SA,
+    DOIP_UNKNOWN_TA,
+    DOIP_MESSAGE_TOO_LARGE,
+    DOIP_OUT_OF_MEMORY,
+    DOIP_taRGET_UNREACHABLE,
+    DOIP_NO_LINK,
+    DOIP_NO_SOCKET,
+    DOIP_ERROR
 } doip_result;
 
 
@@ -144,7 +144,8 @@ typedef enum doip_result {
  * @brief request transmission of <data> with <dlen> bytes
  *
  */
-int doip_data_request(doip_sa sa, doip_ta ta, doip_tat tat, uint8_t* data, uint32_t dlen);
+int doip_data_request(doip_sa sa, doip_ta ta, doip_tat tat, uint8_t *data,
+                      uint32_t dlen);
 
 /*
  * @brief confirm completion of doip_data.request
@@ -154,7 +155,8 @@ int doip_data_confirm(doip_sa sa, doip_ta ta, doip_tat tat, doip_result res);
 /*
  * @brief reply with requested data
  */
-int doip_data_indication(doip_sa sa, doip_ta ta, doip_tat tat, uint8_t* data, uint32_t dlen, doip_result res);
+int doip_data_indication(doip_sa sa, doip_ta ta, doip_tat tat, uint8_t *data,
+                         uint32_t dlen, doip_result res);
 
 /*
  * @brief raw UDP send function for DoIP messages
@@ -167,7 +169,8 @@ int doip_data_indication(doip_sa sa, doip_ta ta, doip_tat tat, uint8_t* data, ui
  *
  * TODO: make static once we're out of development
  */
-int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t* data, uint32_t dlen, char* ip_addr);
+int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t *data,
+                  uint32_t dlen, char *ip_addr);
 
 /* ################################ */
 
