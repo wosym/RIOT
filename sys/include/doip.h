@@ -111,26 +111,26 @@ typedef uint16_t doip_ta;
  *      1 to 1 communication, called physical addressing (unicast), and 1 to n
  *      communication, called functional addressing (multicast/broadcast).
  */
-typedef enum doip_tat{physical, functional, doip_tat_MAX} doip_tat;
+typedef enum doip_tat {physical, functional, doip_tat_MAX} doip_tat;
 
 /**
  * @brief Outcome of service execution
  *
  * @detailed Outcome of service execution. If two or more errors are discoverd at the same time, the parameter first found in this list will be given
  */
-typedef enum doip_result{
-    DOIP_OK,
-    DOIP_HDR_ERROR,
-    DOIP_TIMEOUT_A,
-    DOIP_UNKNOWN_SA,
-    DOIP_INVALID_SA,
-    DOIP_UNKNOWN_TA,
-    DOIP_MESSAGE_TOO_LARGE,
-    DOIP_OUT_OF_MEMORY,
-    DOIP_taRGET_UNREACHABLE,
-    DOIP_NO_LINK,
-    DOIP_NO_SOCKET,
-    DOIP_ERROR
+typedef enum doip_result {
+        DOIP_OK,
+        DOIP_HDR_ERROR,
+        DOIP_TIMEOUT_A,
+        DOIP_UNKNOWN_SA,
+        DOIP_INVALID_SA,
+        DOIP_UNKNOWN_TA,
+        DOIP_MESSAGE_TOO_LARGE,
+        DOIP_OUT_OF_MEMORY,
+        DOIP_taRGET_UNREACHABLE,
+        DOIP_NO_LINK,
+        DOIP_NO_SOCKET,
+        DOIP_ERROR
 } doip_result;
 
 
@@ -144,7 +144,7 @@ typedef enum doip_result{
  * @brief request transmission of <data> with <dlen> bytes
  *
  */
-int doip_data_request(doip_sa sa, doip_ta ta, doip_tat tat , uint8_t* data, uint32_t dlen);
+int doip_data_request(doip_sa sa, doip_ta ta, doip_tat tat, uint8_t* data, uint32_t dlen);
 
 /*
  * @brief confirm completion of doip_data.request
