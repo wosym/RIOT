@@ -13,7 +13,7 @@
  *
  * Available service primitives:
  * - request: request a service from the service provider
- * - inidcation: service provider informs a service user about an internal event of the network layer or the service request of a peer protocol layer entity service user
+ * - indication: service provider informs a service user about an internal event of the network layer or the service request of a peer protocol layer entity service user
  * - confirm: service provider informs the service user about the result of a preceding service request of the service user.
  */
 

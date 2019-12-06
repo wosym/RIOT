@@ -37,8 +37,7 @@ int ifconfig(int argc, char **argv)
                                         sizeof(addrstr)));
             }
         }
-#endif
-#ifndef APP_IPV6
+#else
         printf("MAC: %u:%u:%u:%u:%u:%u\n", iface->hwaddr[0], iface->hwaddr[1],
                iface->hwaddr[2], iface->hwaddr[3], iface->hwaddr[4],
                iface->hwaddr[5]);

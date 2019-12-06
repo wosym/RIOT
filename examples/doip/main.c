@@ -4,13 +4,19 @@
 #include <shell.h>
 #include "netutil.h"
 
+#define T_2_SEC 2
+#define T_1_SEC 1
+#define SAMPLE_SA 0xe801
+#define SAMPLE_TA 0x1fff
+#define SAMPLE_IP "192.168.0.20";
+
 static int spam_doip(int argc, char **argv)
 {
     (void)argc;
     (void)argv;
-    char ip_addr[] = "192.168.0.20";
-    doip_sa source = 0xe801;
-    doip_ta target = 0x1fff;
+    char ip_addr[] = SAMPLE_IP;
+    doip_sa source = SAMPLE_SA;
+    doip_ta target = SAMPLE_TA;
     uint8_t uds_data[] = { UDS_SERVICES_TP, UDS_SUPRESS_REPLY };
 
     while (1) {
@@ -18,7 +24,7 @@ static int spam_doip(int argc, char **argv)
                       ip_addr);
         doip_send_udp(0, 0, DOIP_VEHICLE_IDENTIFICATION_REQUEST, NULL, 0,
                       ip_addr);
-        xtimer_usleep(1000000);
+        xtimer_sleep(T_1_SEC);
     }
     return 0;
 }
@@ -44,8 +50,8 @@ static int send_doip(int argc, char **argv)
         dlen = 0;
     }
     else {
-        source = 0xe801;
-        target = 0x1fff;
+        source = SAMPLE_SA;
+        target = SAMPLE_TA;
         dlen = 2;
     }
 
@@ -73,14 +79,14 @@ int main(void)
     char line_buf[SHELL_DEFAULT_BUFSIZE];
 
     puts("Starting doip example");
-    xtimer_usleep(2000000);         //necesarry for some reason when sending UDP
+    xtimer_sleep(T_2_SEC);         //necesarry for some reason when sending UDP
     ret = start_dhcp();
     if (ret) {
         puts("failed to start dhcp service");
         while (1) {}
     }
 
-    xtimer_usleep(2000000);     //Give it some extra time to get the DHCP-offer
+    xtimer_sleep(T_2_SEC);     //Give it some extra time to get the DHCP-offer
 
     shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
 
