@@ -51,6 +51,10 @@
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
+#ifdef USE_DHCP
+#include <lwip/dhcp.h>
+#endif
+
 #ifdef MODULE_NETDEV_TAP
 #define LWIP_NETIF_NUMOF        (NETDEV_TAP_MAX)
 #endif
