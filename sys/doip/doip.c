@@ -97,7 +97,7 @@ static int sock_doip_create(sock_doip_t *sock) //TODO: make seperate create func
 
     local.port = 41123;
 
-    if (sock_udp_create(sock->udp_sock, &local, NULL, 0)) {
+    if (sock_udp_create(&(sock->udp_sock), &local, NULL, 0)) {
         puts("Error creating UDP sock");
         return 1;
     }
@@ -108,7 +108,7 @@ static int sock_doip_create(sock_doip_t *sock) //TODO: make seperate create func
 
 int sock_doip_close(sock_doip_t *sock)
 {
-    sock_udp_close(sock->udp_sock); //TODO: error check?
+   sock_udp_close((&sock->udp_sock)); //TODO: error check?
 
     return 0;
 }
@@ -119,10 +119,14 @@ int doip_send_udp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_ty
     int ret = 0;
     sock_udp_ep_t remote = SOCK_IPV4_EP_ANY;
 
-    if(sock == NULL || sock->udp_sock == NULL)
-    {
-        sock_doip_create(sock);    //Can also put this responsibility with the user. Makes more sense in the future maybe, but not with shell?
+    if((int)(sock->udp_sock) == 0) {
         puts("DoIP sock empty. Creating...\n");
+        ret = sock_doip_create(sock);    //Can also put this responsibility with the user. Makes more sense in the future maybe, but not with shell?
+        if(ret) {
+            puts("Failed to open DoIP sock");
+            return -1;
+        }
+
     }
 
 

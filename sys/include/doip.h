@@ -107,7 +107,7 @@ typedef uint16_t doip_ta;
  * @brief doip socket
  */
 typedef struct sock_doip_t {
-        sock_udp_t *udp_sock;
+        sock_udp_t udp_sock;
         //TODO: should contain more (e.g. tcp_sock)
 
 } sock_doip_t;
