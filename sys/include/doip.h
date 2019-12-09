@@ -2,6 +2,7 @@
 #define _DOIP_H_
 
 #include <stdint.h>
+#include "net/sock/udp.h"
 
 /*
  * All DoIP layer services have the same general format. Service primitives are written in the form:
@@ -103,6 +104,15 @@ typedef uint16_t doip_sa;
 typedef uint16_t doip_ta;
 
 /**
+ * @brief doip socket
+ */
+typedef struct sock_doip_t {
+        sock_udp_t *udp_sock;
+        //TODO: should contain more (e.g. tcp_sock)
+
+} sock_doip_t;
+
+/**
  * @brief doip logical ta address type
  *
  * @detailed Extension to the doip_ta parameter.
@@ -169,7 +179,7 @@ int doip_data_indication(doip_sa sa, doip_ta ta, doip_tat tat, uint8_t *data,
  *
  * TODO: make static once we're out of development
  */
-int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t *data,
+int doip_send_udp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t *data,
                   uint32_t dlen, char *ip_addr);
 
 /* ################################ */

@@ -1,7 +1,6 @@
 #include <doip.h>
 #include <stdio.h>
 #include <string.h>
-#include "net/sock/udp.h"
 #include "xtimer.h"
 #include "color.h"     //enable colored output to be used in demo
 
@@ -92,15 +91,41 @@ static int doip_print_msg_parsed(uint8_t *data, uint32_t dlen)
 
 }
 
-int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t *data,
+static int sock_doip_create(sock_doip_t *sock) //TODO: make seperate create func for tcp and udp part?
+{
+    sock_udp_ep_t local = SOCK_IPV4_EP_ANY;
+
+    local.port = 41123;
+
+    if (sock_udp_create(sock->udp_sock, &local, NULL, 0)) {
+        puts("Error creating UDP sock");
+        return 1;
+    }
+
+
+    return 0;
+}
+
+int sock_doip_close(sock_doip_t *sock)
+{
+    sock_udp_close(sock->udp_sock); //TODO: error check?
+
+    return 0;
+}
+
+int doip_send_udp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t *data,
                   uint32_t dlen, char *ip_addr)
 {
     int ret = 0;
     sock_udp_ep_t remote = SOCK_IPV4_EP_ANY;
-    sock_udp_ep_t local = SOCK_IPV4_EP_ANY;
-    sock_udp_t sock;
 
-    local.port = 41123;
+    if(sock == NULL || sock->udp_sock == NULL)
+    {
+        sock_doip_create(sock);    //Can also put this responsibility with the user. Makes more sense in the future maybe, but not with shell?
+        puts("DoIP sock empty. Creating...\n");
+    }
+
+
 
     uint32_t payload_len = dlen + 4;        //TA and SA should also be included in the payload length!
     //Not sure if it's always true though... What if TA and SA are 0 (e.g. with Veh. Id. Req)? Then those aren't added to payload, thus, no +4?
@@ -108,10 +133,6 @@ int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t *data,
     int msglen = 0;         //Total length of message to be sent over UDP
 
     uint8_t buf[50] = { '\0' };
-    if (sock_udp_create(&sock, &local, NULL, 0)) {
-        puts("Error creating UDP sock");
-        return 1;
-    }
 
     if (data == NULL && dlen != 0) {
         return -1;
@@ -156,14 +177,14 @@ int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t *data,
     remote.port = 13400;
     ipv4_addr_from_str((ipv4_addr_t *)&remote.addr.ipv4, ip_addr);
 
-    if ((ret = sock_udp_send(&sock, dbuf, msglen, &remote)) < 0) {
+    if ((ret = sock_udp_send(sock->udp_sock, dbuf, msglen, &remote)) < 0) {
         puts("Error sending datagram");
         printf("Err: %d\n", ret );              //22 = EINVAL --> invalid argument
         return -1;
     }
 
     if ((ret =
-             sock_udp_recv(&sock, buf, sizeof(buf), udp_recv_timeout,
+             sock_udp_recv(sock->udp_sock, buf, sizeof(buf), udp_recv_timeout,
                            NULL)) < 0) {
         if (ret == -ETIMEDOUT) {            //TODO: I think there's still something off with the timeout. It keeps blocking...
             puts("Timed out");
@@ -184,7 +205,6 @@ int doip_send_udp(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t *data,
     }
 
     puts("======================");
-    sock_udp_close(&sock);
     xtimer_sleep(1);
 
 
