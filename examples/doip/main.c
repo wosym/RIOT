@@ -76,7 +76,8 @@ static int spam_doip(int argc, char **argv)
 {
     (void)argc;
     (void)argv;
-    char ip_addr[] = SAMPLE_IP;
+    //char ip_addr[] = {0};
+    char* ip_addr = target_ip;
     doip_sa source = SAMPLE_SA;
     doip_ta target = SAMPLE_TA;
     uint8_t uds_data[] = { UDS_SERVICES_TP, UDS_SUPRESS_REPLY };
@@ -128,12 +129,34 @@ help:
     return -1;
 }
 
+static int tcp_send(int argc, char **argv)
+{
+    (void) argc;
+    (void) argv;
+    doip_sa source = SAMPLE_SA;
+    doip_ta target = SAMPLE_TA;
+    uint8_t uds_data[] = { UDS_SERVICES_TP, UDS_SUPRESS_REPLY };
+
+    doip_send_tcp(&sock, source, target, DOIP_DIAGNOSTIC_MESSAGE, uds_data, 2);
+
+    return 0;
+}
+static int tcp_connect(int argc, char **argv)
+{
+    (void) argc;
+    (void) argv;
+    doip_tcp_connect(&sock, target_ip);
+    return 0;
+}
+
 const shell_command_t shell_commands[] = {
     { "ifconfig", "Show network interfaces", ifconfig },
     { "set_target_ip", "Set IP address to which the DoIP messages should be sent", set_target_ip },
     { "print_target_ip", "Print current IP address to which the DoIP messages should be sent", print_target_ip },
     { "spam_doip", "Continiously send doip requests", spam_doip },
     { "send_doip", "Send doip message", send_doip },
+    { "tcp_connect", "Connect TCP", tcp_connect },
+    { "tcp_send", "Send message over TCP", tcp_send },
     { NULL, NULL, NULL }
 };
 
@@ -150,6 +173,8 @@ int main(void)
         while (1) {}
     }
 
+
+    xtimer_sleep(T_2_SEC);         //Wait for DHCP lease? Maybe we should make a check for this, or let the user do it manually...
     sock_doip_create(&sock);    //initialize DoIP socket
 
     xtimer_sleep(T_2_SEC);     //Give it some extra time to get the DHCP-offer

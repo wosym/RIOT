@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "net/sock/udp.h"
+#include "net/sock/tcp.h"
 
 /*
  * All DoIP layer services have the same general format. Service primitives are written in the form:
@@ -108,6 +109,7 @@ typedef uint16_t doip_ta;
  */
 typedef struct sock_doip_t {
         sock_udp_t udp_sock;
+        sock_tcp_t tcp_sock;
         //TODO: should contain more (e.g. tcp_sock)
 
 } sock_doip_t;
@@ -191,8 +193,16 @@ int doip_data_indication(doip_sa sa, doip_ta ta, doip_tat tat, uint8_t *data,
 int doip_send_udp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t *data,
                   uint32_t dlen, char *ip_addr);
 
+/*
+ * @brief open TCP socket for DoIP communication
+ */
+int doip_tcp_connect(sock_doip_t *sock, char* ip);
 /* ################################ */
 
+/*
+ * @brief Send TCP message
+ */
+int doip_send_tcp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t *data, uint32_t dlen);
 
 //TODO: define headers for empty optional parameters
 
