@@ -158,7 +158,7 @@ int sock_doip_create(sock_doip_t *sock);
 /*
  * @brief close DoIP socket
  */
-int sock_doip_close(sock_doip_t *sock)
+int sock_doip_close(sock_doip_t *sock);
 
 /*
  * @brief request transmission of <data> with <dlen> bytes

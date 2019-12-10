@@ -106,30 +106,18 @@ int sock_doip_create(sock_doip_t *sock) //TODO: make seperate create func for tc
 
 int sock_doip_close(sock_doip_t *sock)
 {
-   sock_udp_close((&sock->udp_sock)); //TODO: error check?
+    sock_udp_close(&(sock->udp_sock)); //TODO: error check?
 
     return 0;
 }
 
-int doip_send_udp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t *data,
-                  uint32_t dlen, char *ip_addr)
+static int doip_create_message(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t *data, uint32_t dlen, uint8_t* dbuf)
 {
-    int ret = 0;
-    sock_udp_ep_t remote = SOCK_IPV4_EP_ANY;
-
-    if(sock == 0) {
-        puts("DoIP sock empty.\n");
-        return -1;
-    }
-
-
-
     uint32_t payload_len = dlen + 4;        //TA and SA should also be included in the payload length!
     //Not sure if it's always true though... What if TA and SA are 0 (e.g. with Veh. Id. Req)? Then those aren't added to payload, thus, no +4?
 
     int msglen = 0;         //Total length of message to be sent over UDP
 
-    uint8_t buf[50] = { '\0' };
 
     if (data == NULL && dlen != 0) {
         return -1;
@@ -164,6 +152,25 @@ int doip_send_udp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_ty
         memcpy(&dbuf[12], data, dlen);                  //Byte 12 - 13+dlen: data
         msglen += dlen;
     }
+    return msglen;
+}
+
+int doip_send_udp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t *data,
+                  uint32_t dlen, char *ip_addr)
+{
+    int ret = 0;
+    uint8_t buf[50] = { '\0' };
+    int msglen = 0;
+    sock_udp_ep_t remote = SOCK_IPV4_EP_ANY;
+
+    if(sock == 0) {
+        puts("DoIP sock empty.\n");
+        return -1;
+    }
+
+    msglen = doip_create_message(sa, ta, payload_type, data, dlen, dbuf);
+    if(msglen < 0)
+        return -1;
 
     puts(YEL);
     printf("doip Message to be sent: \n");
@@ -180,8 +187,7 @@ int doip_send_udp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_ty
         return -1;
     }
 
-    if ((ret =
-             sock_udp_recv(&(sock->udp_sock), buf, sizeof(buf), udp_recv_timeout,
+    if ((ret = sock_udp_recv(&(sock->udp_sock), buf, sizeof(buf), udp_recv_timeout,
                            NULL)) < 0) {
         if (ret == -ETIMEDOUT) {            //TODO: I think there's still something off with the timeout. It keeps blocking...
             puts("Timed out");
