@@ -208,7 +208,6 @@ int doip_send_udp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_ty
     }
 
     puts("======================");
-    xtimer_sleep(1);
 
 
 
