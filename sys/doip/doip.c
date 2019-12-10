@@ -91,7 +91,7 @@ static int doip_print_msg_parsed(uint8_t *data, uint32_t dlen)
 
 }
 
-static int sock_doip_create(sock_doip_t *sock) //TODO: make seperate create func for tcp and udp part?
+int sock_doip_create(sock_doip_t *sock) //TODO: make seperate create func for tcp and udp part?
 {
     sock_udp_ep_t local = SOCK_IPV4_EP_ANY;
 
@@ -101,8 +101,6 @@ static int sock_doip_create(sock_doip_t *sock) //TODO: make seperate create func
         puts("Error creating UDP sock");
         return 1;
     }
-
-
     return 0;
 }
 
@@ -119,14 +117,9 @@ int doip_send_udp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_ty
     int ret = 0;
     sock_udp_ep_t remote = SOCK_IPV4_EP_ANY;
 
-    if((int)(sock->udp_sock) == 0) {
-        puts("DoIP sock empty. Creating...\n");
-        ret = sock_doip_create(sock);    //Can also put this responsibility with the user. Makes more sense in the future maybe, but not with shell?
-        if(ret) {
-            puts("Failed to open DoIP sock");
-            return -1;
-        }
-
+    if(sock == 0) {
+        puts("DoIP sock empty.\n");
+        return -1;
     }
 
 
@@ -181,14 +174,14 @@ int doip_send_udp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_ty
     remote.port = 13400;
     ipv4_addr_from_str((ipv4_addr_t *)&remote.addr.ipv4, ip_addr);
 
-    if ((ret = sock_udp_send(sock->udp_sock, dbuf, msglen, &remote)) < 0) {
+    if ((ret = sock_udp_send(&(sock->udp_sock), dbuf, msglen, &remote)) < 0) {
         puts("Error sending datagram");
         printf("Err: %d\n", ret );              //22 = EINVAL --> invalid argument
         return -1;
     }
 
     if ((ret =
-             sock_udp_recv(sock->udp_sock, buf, sizeof(buf), udp_recv_timeout,
+             sock_udp_recv(&(sock->udp_sock), buf, sizeof(buf), udp_recv_timeout,
                            NULL)) < 0) {
         if (ret == -ETIMEDOUT) {            //TODO: I think there's still something off with the timeout. It keeps blocking...
             puts("Timed out");

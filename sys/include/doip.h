@@ -151,8 +151,12 @@ typedef enum doip_result {
 /* ####### DoIP Functions ########## */
 
 /*
+ *@brief create DoIP socket
+ */
+int sock_doip_create(sock_doip_t *sock);
+
+/*
  * @brief request transmission of <data> with <dlen> bytes
- *
  */
 int doip_data_request(doip_sa sa, doip_ta ta, doip_tat tat, uint8_t *data,
                       uint32_t dlen);

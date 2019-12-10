@@ -8,7 +8,7 @@
 #define T_1_SEC 1
 #define SAMPLE_SA 0xe801
 #define SAMPLE_TA 0x1fff
-#define SAMPLE_IP "192.168.0.20";
+#define SAMPLE_IP "192.168.0.11";
 
 sock_doip_t sock;
 
@@ -20,12 +20,11 @@ static int spam_doip(int argc, char **argv)
     doip_sa source = SAMPLE_SA;
     doip_ta target = SAMPLE_TA;
     uint8_t uds_data[] = { UDS_SERVICES_TP, UDS_SUPRESS_REPLY };
-    sock_doip_t sock2 = {0};
 
     while (1) {
-        doip_send_udp(&sock2, source, target, DOIP_DIAGNOSTIC_MESSAGE, uds_data, 2,
+        doip_send_udp(&sock, source, target, DOIP_DIAGNOSTIC_MESSAGE, uds_data, 2,
                       ip_addr);
-        doip_send_udp(&sock2, 0, 0, DOIP_VEHICLE_IDENTIFICATION_REQUEST, NULL, 0,
+        doip_send_udp(&sock, 0, 0, DOIP_VEHICLE_IDENTIFICATION_REQUEST, NULL, 0,
                       ip_addr);
         xtimer_sleep(T_1_SEC);
     }
@@ -88,6 +87,8 @@ int main(void)
         puts("failed to start dhcp service");
         while (1) {}
     }
+
+    sock_doip_create(&sock);    //initialize DoIP socket
 
     xtimer_sleep(T_2_SEC);     //Give it some extra time to get the DHCP-offer
 
