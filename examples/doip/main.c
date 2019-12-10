@@ -155,6 +155,7 @@ int main(void)
     xtimer_sleep(T_2_SEC);     //Give it some extra time to get the DHCP-offer
 
     shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
+    sock_doip_close(&sock);
 
     return 0;
 }
