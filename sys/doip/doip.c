@@ -7,7 +7,7 @@
 //data buffer for doip message
 uint8_t dbuf[DOIP_MAX_MSG_LEN];
 
-const uint32_t udp_recv_timeout = 1000000;  //us
+const uint32_t recv_timeout = 1000000;  //us
 
 static void doip_print_msg(uint8_t *data, uint32_t dlen)
 {
@@ -187,7 +187,7 @@ int doip_send_udp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_ty
         return -1;
     }
 
-    if ((ret = sock_udp_recv(&(sock->udp_sock), buf, sizeof(buf), udp_recv_timeout,
+    if ((ret = sock_udp_recv(&(sock->udp_sock), buf, sizeof(buf), recv_timeout,
                            NULL)) < 0) {
         if (ret == -ETIMEDOUT) {            //TODO: I think there's still something off with the timeout. It keeps blocking...
             puts("Timed out");
@@ -258,7 +258,7 @@ int doip_send_tcp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_ty
     if(ret < 0) {
         printf("Error on write: %d\n", ret);
     } else {
-        ret = sock_tcp_read(&(sock->tcp_sock), &dbuf, sizeof(dbuf), SOCK_NO_TIMEOUT);
+        ret = sock_tcp_read(&(sock->tcp_sock), &dbuf, sizeof(dbuf), recv_timeout);
         if(ret < 0) {
             puts("Disconnected");
         }

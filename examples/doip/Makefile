@@ -44,5 +44,6 @@ CFLAGS += -DNETMASK=$(NETMASK)
 CFLAGS += -DGATEWAY=$(GATEWAY)
 
 CFLAGS += -DUSE_DHCP    #necesarry because we don't want the regular bootstrap code to run
+CFLAGS += -DLWIP_SO_RCVTIMEO	#necesarry to enable timeouts for lwip
 
 include $(RIOTBASE)/Makefile.include
