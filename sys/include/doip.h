@@ -110,7 +110,7 @@ typedef uint16_t doip_ta;
 typedef struct sock_doip_t {
         sock_udp_t udp_sock;
         sock_tcp_t tcp_sock;
-        //TODO: should contain more (e.g. tcp_sock)
+        //TODO: should contain more ()
 
 } sock_doip_t;
 
@@ -203,7 +203,7 @@ int doip_tcp_disconnect(sock_doip_t *sock);
 /*
  * @brief Send TCP message
  */
-int doip_send_tcp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t *data, uint32_t dlen);
+int doip_send_tcp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t *data, uint32_t dlen, char* ip);
 
 //TODO: define headers for empty optional parameters
 

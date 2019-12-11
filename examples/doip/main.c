@@ -72,7 +72,7 @@ static int set_target_ip(int argc, char **argv)
 
     return 0;
 }
-static int spam_doip(int argc, char **argv)
+static int spam_udp(int argc, char **argv)
 {
     (void)argc;
     (void)argv;
@@ -92,7 +92,7 @@ static int spam_doip(int argc, char **argv)
     return 0;
 }
 
-static int send_doip(int argc, char **argv)
+static int send_udp(int argc, char **argv)
 {
     doip_sa source = 0;
     doip_ta target = 0;
@@ -101,10 +101,8 @@ static int send_doip(int argc, char **argv)
     uint16_t msg = 0;
 
     printf("n: %d\n", argc);
+
     if (argc < 2) {
-        goto help;
-    }
-    if (argc < 3) {
         msg = DOIP_VEHICLE_IDENTIFICATION_REQUEST;
     }
     if (msg == DOIP_VEHICLE_IDENTIFICATION_REQUEST) {
@@ -115,18 +113,14 @@ static int send_doip(int argc, char **argv)
     else {
         source = SAMPLE_SA;
         target = SAMPLE_TA;
+        msg = atoi(argv[2]);
         dlen = 2;
     }
-
-    doip_send_udp(&sock, source, target, msg, uds_data, dlen, argv[1]);
+    doip_send_udp(&sock, source, target, msg, uds_data, dlen, target_ip);
 
 
 
     return 0;
-
-help:
-    puts("Usage: send_doip <ip> [<doip_message_type> <n> <delay>]");
-    return -1;
 }
 
 static int tcp_send(int argc, char **argv)
@@ -137,10 +131,11 @@ static int tcp_send(int argc, char **argv)
     doip_ta target = SAMPLE_TA;
     uint8_t uds_data[] = { UDS_SERVICES_TP, UDS_SUPRESS_REPLY };
 
-    doip_send_tcp(&sock, source, target, DOIP_DIAGNOSTIC_MESSAGE, uds_data, 2);
+    doip_send_tcp(&sock, source, target, DOIP_DIAGNOSTIC_MESSAGE, uds_data, 2, target_ip);
 
     return 0;
 }
+/*
 static int tcp_connect(int argc, char **argv)
 {
     (void) argc;
@@ -155,15 +150,16 @@ static int tcp_close(int argc, char **argv)
     (void) argv;
     return doip_tcp_disconnect(&sock);
 }
+*/
 
 const shell_command_t shell_commands[] = {
     { "ifconfig", "Show network interfaces", ifconfig },
     { "set_target_ip", "Set IP address to which the DoIP messages should be sent", set_target_ip },
     { "print_target_ip", "Print current IP address to which the DoIP messages should be sent", print_target_ip },
-    { "spam_doip", "Continiously send doip requests", spam_doip },
-    { "send_doip", "Send doip message", send_doip },
-    { "tcp_connect", "Connect TCP", tcp_connect },
-    { "tcp_close", "Close TCP", tcp_close },
+    { "udp_spam", "Continiously send doip requests UDP", spam_udp },
+    { "udp_send", "Send doip message over UDP", send_udp },
+    //{ "tcp_connect", "Connect TCP", tcp_connect },
+    //{ "tcp_close", "Close TCP", tcp_close },
     { "tcp_send", "Send message over TCP", tcp_send },
     { NULL, NULL, NULL }
 };

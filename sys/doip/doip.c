@@ -241,10 +241,17 @@ int doip_tcp_disconnect(sock_doip_t *sock)
     return 0;
 }
 
-int doip_send_tcp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t *data, uint32_t dlen)
+int doip_send_tcp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t *data, uint32_t dlen, char* ip)
 {
     int ret = 0;
     int msglen = 0;
+
+    ret = doip_tcp_connect(sock, ip);
+    if(ret != 0) {
+        doip_tcp_disconnect(sock);
+        return ret;
+    }
+
 
     msglen = doip_create_message(sa, ta, payload_type, data, dlen, dbuf);
     if(msglen < 0)
@@ -280,6 +287,7 @@ int doip_send_tcp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_ty
         puts("");
     }
 
+    doip_tcp_disconnect(sock);
 
 
     return 0;
