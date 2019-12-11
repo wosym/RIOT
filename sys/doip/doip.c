@@ -122,13 +122,9 @@ static int doip_create_message(doip_sa sa, doip_ta ta, uint16_t payload_type, ui
 
     int msglen = 0;         //Total length of message to be sent over UDP
 
-
     if (data == NULL && dlen != 0) {
         return -1;
     }
-
-
-    //TODO: make a message_create function?
 
     dbuf[0] = DOIP_VERSION;                     //Byte 0: Protocol version
     dbuf[1] = ~DOIP_VERSION;                    //Byte 1: Inverse Protocol version
@@ -156,6 +152,7 @@ static int doip_create_message(doip_sa sa, doip_ta ta, uint16_t payload_type, ui
         memcpy(&dbuf[12], data, dlen);                  //Byte 12 - 13+dlen: data
         msglen += dlen;
     }
+
     return msglen;
 }
 
@@ -225,7 +222,6 @@ int doip_tcp_connect(sock_doip_t *sock, char* ip)
     //remote.port = 12345;
     remote.port = 13400;
     ipv4_addr_from_str((ipv4_addr_t *)&remote.addr, ip);
-    printf("Addr: %d\n", remote.addr.ipv4[3]);
     ret = sock_tcp_connect(&(sock->tcp_sock), &remote, 0, 0);
     if(ret < 0) {
         puts("Error connecting sock");
@@ -262,29 +258,20 @@ int doip_send_tcp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_ty
     if(ret < 0) {
         printf("Error on write: %d\n", ret);
     } else {
-        //seg1
         ret = sock_tcp_read(&(sock->tcp_sock), &dbuf, sizeof(dbuf), SOCK_NO_TIMEOUT);
         if(ret < 0) {
             puts("Disconnected");
         }
-        printf("Read: ");
-        for(int i = 0; i < ret; i++)
+        puts(GRN);
+        printf("Received answer: ");
+        for(int i = 1; i < ret; i++)
         {
-            printf("%d", (int)dbuf[i]);
+            printf("0x%.2x ", dbuf[i]);
         }
-        puts("");
-
-        //seg2
-        ret = sock_tcp_read(&(sock->tcp_sock), &dbuf, sizeof(dbuf), SOCK_NO_TIMEOUT);
-        if(ret < 0) {
-            puts("Disconnected");
-        }
-        printf("Read: ");
-        for(int i = 0; i < ret; i++)
-        {
-            printf("%c", dbuf[i]);
-        }
-        puts("");
+        puts("\"");
+        doip_print_msg_parsed(dbuf, ret);
+        puts(reset);
+        puts("=================================");
     }
 
     doip_tcp_disconnect(sock);
