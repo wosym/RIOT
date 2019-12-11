@@ -111,7 +111,6 @@ int sock_doip_create(sock_doip_t *sock) //TODO: make seperate create func for tc
 int sock_doip_close(sock_doip_t *sock)
 {
     sock_udp_close(&(sock->udp_sock)); //TODO: error check?
-    //TODO: close tcp!
 
     return 0;
 }
@@ -236,6 +235,11 @@ int doip_tcp_connect(sock_doip_t *sock, char* ip)
 
     return 0;
 }
+int doip_tcp_disconnect(sock_doip_t *sock)
+{
+    sock_tcp_disconnect(&(sock->tcp_sock));
+    return 0;
+}
 
 int doip_send_tcp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t *data, uint32_t dlen)
 {
@@ -251,8 +255,32 @@ int doip_send_tcp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_ty
     if(ret < 0) {
         printf("Error on write: %d\n", ret);
     } else {
-        //TODO: receive...
+        //seg1
+        ret = sock_tcp_read(&(sock->tcp_sock), &dbuf, sizeof(dbuf), SOCK_NO_TIMEOUT);
+        if(ret < 0) {
+            puts("Disconnected");
+        }
+        printf("Read: ");
+        for(int i = 0; i < ret; i++)
+        {
+            printf("%d", (int)dbuf[i]);
+        }
+        puts("");
+
+        //seg2
+        ret = sock_tcp_read(&(sock->tcp_sock), &dbuf, sizeof(dbuf), SOCK_NO_TIMEOUT);
+        if(ret < 0) {
+            puts("Disconnected");
+        }
+        printf("Read: ");
+        for(int i = 0; i < ret; i++)
+        {
+            printf("%c", dbuf[i]);
+        }
+        puts("");
     }
+
+
 
     return 0;
 }

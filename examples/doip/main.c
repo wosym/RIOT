@@ -149,6 +149,13 @@ static int tcp_connect(int argc, char **argv)
     return 0;
 }
 
+static int tcp_close(int argc, char **argv)
+{
+    (void) argc;
+    (void) argv;
+    return doip_tcp_disconnect(&sock);
+}
+
 const shell_command_t shell_commands[] = {
     { "ifconfig", "Show network interfaces", ifconfig },
     { "set_target_ip", "Set IP address to which the DoIP messages should be sent", set_target_ip },
@@ -156,6 +163,7 @@ const shell_command_t shell_commands[] = {
     { "spam_doip", "Continiously send doip requests", spam_doip },
     { "send_doip", "Send doip message", send_doip },
     { "tcp_connect", "Connect TCP", tcp_connect },
+    { "tcp_close", "Close TCP", tcp_close },
     { "tcp_send", "Send message over TCP", tcp_send },
     { NULL, NULL, NULL }
 };

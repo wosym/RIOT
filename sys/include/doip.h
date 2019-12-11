@@ -197,7 +197,8 @@ int doip_send_udp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_ty
  * @brief open TCP socket for DoIP communication
  */
 int doip_tcp_connect(sock_doip_t *sock, char* ip);
-/* ################################ */
+
+int doip_tcp_disconnect(sock_doip_t *sock);
 
 /*
  * @brief Send TCP message
@@ -205,5 +206,7 @@ int doip_tcp_connect(sock_doip_t *sock, char* ip);
 int doip_send_tcp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t *data, uint32_t dlen);
 
 //TODO: define headers for empty optional parameters
+
+/* ################################ */
 
 #endif
