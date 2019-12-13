@@ -156,11 +156,11 @@ const shell_command_t shell_commands[] = {
     { "ifconfig", "Show network interfaces", ifconfig },
     { "set_target_ip", "Set IP address to which the DoIP messages should be sent", set_target_ip },
     { "print_target_ip", "Print current IP address to which the DoIP messages should be sent", print_target_ip },
-    { "udp_spam", "Continiously send doip requests UDP", spam_udp },
-    { "udp_send", "Send doip message over UDP", send_udp },
+    { "udp_spam", "Continiously send DoIP requests UDP", spam_udp },
+    { "udp_send", "Send DoIP message over UDP", send_udp },
     //{ "tcp_connect", "Connect TCP", tcp_connect },
     //{ "tcp_close", "Close TCP", tcp_close },
-    { "tcp_send", "Send message over TCP", tcp_send },
+    { "tcp_send", "Send DoIP message over TCP", tcp_send },
     { NULL, NULL, NULL }
 };
 
