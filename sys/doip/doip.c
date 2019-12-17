@@ -117,8 +117,10 @@ int sock_doip_close(sock_doip_t *sock)
 
 static int doip_create_message(doip_sa sa, doip_ta ta, uint16_t payload_type, uint8_t *data, uint32_t dlen, uint8_t* dbuf)
 {
-    uint32_t payload_len = dlen + 4;        //TA and SA should also be included in the payload length!
-    //Not sure if it's always true though... What if TA and SA are 0 (e.g. with Veh. Id. Req)? Then those aren't added to payload, thus, no +4?
+    uint32_t payload_len = dlen;
+    if(payload_type != 0x0001) {
+        payload_len += 4;   //TA and SA should also be included in the payload length!
+    }
 
     int msglen = 0;         //Total length of message to be sent over UDP
 
