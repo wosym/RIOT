@@ -73,7 +73,7 @@ static int doip_print_msg_parsed(uint8_t *data, uint32_t dlen)
     printf("Payload length: %ld\n", payload_len);
 
     if (dlen < 12) {
-        return 0;
+        return payload_type;
     }
     source = (data[8] << 8 | data[9]);
     target = (data[10] << 8 | data[11]);
@@ -86,7 +86,7 @@ static int doip_print_msg_parsed(uint8_t *data, uint32_t dlen)
     printf("\n");
 
 
-    return 0;
+    return payload_type;
 
 
 }
@@ -243,6 +243,7 @@ int doip_send_tcp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_ty
 {
     int ret = 0;
     int msglen = 0;
+    int msg_type = 0;
 
     ret = doip_tcp_connect(sock, ip);
     if(ret != 0) {
@@ -263,16 +264,37 @@ int doip_send_tcp(sock_doip_t *sock, doip_sa sa, doip_ta ta, uint16_t payload_ty
         ret = sock_tcp_read(&(sock->tcp_sock), &dbuf, sizeof(dbuf), recv_timeout);
         if(ret < 0) {
             puts("Disconnected");
+        } else {
+            puts(GRN);
+            printf("Received answer: ");
+            for(int i = 1; i < ret; i++)
+            {
+                printf("0x%.2x ", dbuf[i]);
+            }
+            puts("\"");
+            msg_type = doip_print_msg_parsed(dbuf, ret);
+            puts(reset);
         }
-        puts(GRN);
-        printf("Received answer: ");
-        for(int i = 1; i < ret; i++)
+        //DOIP_ACK usually means we expect an extra reply with the data we initially requested
+        if(msg_type == DOIP_DIAGNOSTIC_MESSAGE_POSITIVE_ACK)
         {
-            printf("0x%.2x ", dbuf[i]);
+            puts("Waiting for data...");
+            ret = sock_tcp_read(&(sock->tcp_sock), &dbuf, sizeof(dbuf), recv_timeout);
+            if(ret < 0) {
+                puts("Disconnected");
+            } else {
+                puts(GRN);
+                printf("Received data: \"");
+                for(int i = 1; i < ret; i++)
+                {
+                    printf("0x%.2x ", dbuf[i]);
+                }
+                puts("\"");
+                msg_type = doip_print_msg_parsed(dbuf, ret);
+                puts(reset);
+            }
+
         }
-        puts("\"");
-        doip_print_msg_parsed(dbuf, ret);
-        puts(reset);
         puts("=================================");
     }
 

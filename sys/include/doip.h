@@ -89,6 +89,10 @@
 #define DOIP_DIAGNOSTIC_MESSAGE                         0x8001
 #define DOIP_DIAGNOSTIC_MESSAGE_POSITIVE_ACK            0x8002
 #define DOIP_DIAGNOSTIC_MESSAGE_NEGATVE_ACK             0x8003
+
+//added these from scapy uds file, not sure if they are standard or not 
+#define UDS_REQUEST_READ_DATA_BY_IDENTIFIER_POSITIVE_RESPONSE    0x62
+
 /* ########################*/
 
 

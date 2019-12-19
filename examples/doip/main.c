@@ -135,6 +135,18 @@ static int tcp_send(int argc, char **argv)
 
     return 0;
 }
+static int data_req(int argc, char **argv)
+{
+    (void) argc;
+    (void) argv;
+    doip_sa source = SAMPLE_SA;
+    doip_ta target = SAMPLE_TA;
+    uint8_t uds_data[] = {UDS_SERVICES_RDBI, 0xf1, 0xaa};
+
+    doip_send_tcp(&sock, source, target, DOIP_DIAGNOSTIC_MESSAGE, uds_data, 3, target_ip);
+
+    return 0;
+}
 /*
 static int tcp_connect(int argc, char **argv)
 {
@@ -161,6 +173,7 @@ const shell_command_t shell_commands[] = {
     //{ "tcp_connect", "Connect TCP", tcp_connect },
     //{ "tcp_close", "Close TCP", tcp_close },
     { "tcp_send", "Send DoIP message over TCP", tcp_send },
+    { "data_req", "Request diagnostic data", data_req },
     { NULL, NULL, NULL }
 };
 
