@@ -139,9 +139,17 @@ static int data_req(int argc, char **argv)
 {
     (void) argc;
     (void) argv;
+    int i = 0;
     doip_sa source = SAMPLE_SA;
     doip_ta target = SAMPLE_TA;
     uint8_t uds_data[] = {UDS_SERVICES_RDBI, 0xf1, 0xaa};
+    if(argc > 1){
+        for(i = 1; i < argc; i++) {
+            uds_data[i] = (int)strtol(argv[i], 0, 16);
+        }
+
+    }
+
 
     doip_send_tcp(&sock, source, target, DOIP_DIAGNOSTIC_MESSAGE, uds_data, 3, target_ip);
 
