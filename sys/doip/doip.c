@@ -75,20 +75,28 @@ static int doip_print_msg_parsed(uint8_t *data, uint32_t dlen)
     if (dlen < 12) {
         return payload_type;
     }
-    source = (data[8] << 8 | data[9]);
-    target = (data[10] << 8 | data[11]);
-    printf("Source address: %x, target address: %x\n", source, target);
+    if(payload_type == DOIP_VEHICLE_IDENTIFCATION_RESPONSE) {
+        printf("VIN: ");
+        for (i = 8; i < 8+17; i++) {
+            printf("%c", data[i]);
+        }
+        printf("\n");
+        //TODO: Also print EID, GID, ...
+    } else {
+        source = (data[8] << 8 | data[9]);
+        target = (data[10] << 8 | data[11]);
+        printf("Source address: %x, target address: %x\n", source, target);
 
-    puts("UDS data:");
-    for (i = 12; i < dlen; i++) {
-        printf("0x%x ", data[i]);
+        puts("UDS data:");
+        for (i = 12; i < dlen; i++) {
+            printf("0x%x ", data[i]);
+        }
+        printf("\n");
     }
-    printf("\n");
+    //TODO: maybe place all handling code inside the switch, and create a goto for the default handler. 
 
 
     return payload_type;
-
-
 }
 
 int sock_doip_create(sock_doip_t *sock) //TODO: make seperate create func for tcp and udp part?
