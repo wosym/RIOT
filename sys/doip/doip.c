@@ -1,3 +1,10 @@
+/**
+ * DoIP: Diagnostics over IP
+ *
+ * @brief   Basic implementation of DoIP protocol
+ * @author  Wouter Symons <wsymons@nalys-group.com>
+ * @}
+ */
 #include <doip.h>
 #include <stdio.h>
 #include <string.h>

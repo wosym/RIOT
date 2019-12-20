@@ -1,3 +1,10 @@
+/**
+ * DoIP: Example
+ *
+ * @brief   Example of DoIP capabilities
+ * @author  Wouter Symons <wsymons@nalys-group.com>
+ * @}
+ */
 #include <ctype.h>
 #include <doip.h>
 #include <shell.h>

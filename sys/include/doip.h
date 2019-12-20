@@ -1,3 +1,10 @@
+/**
+ * DoIP: Diagnostics over IP
+ *
+ * @brief   Basic implementation of DoIP protocol
+ * @author  Wouter Symons <wsymons@nalys-group.com>
+ * @}
+ */
 #ifndef _DOIP_H_
 #define _DOIP_H_
 
