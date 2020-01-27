@@ -23,18 +23,33 @@
 
 #include <debug.h>
 #include <errno.h>
+#include <isrpipe.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <isrpipe.h>
 #include "shell.h"
 #include "can/device.h"
 
-#ifdef BOARD_NATIVE
+#if defined(BOARD_NATIVE)
 
 #include <candev_linux.h>
-
 static candev_linux_t linux_dev;
+
+#elif defined(CAN_DRIVER_MCP2515)
+
+#include "candev_mcp2515.h"
+
+static candev_mcp2515_conf_t mcp2515_conf = {
+    .spi = TEST_MCP2515_SPI,
+    .spi_mode = TEST_MCP2515_SPI_MODE,
+    .spi_clk = TEST_MCP2515_SPI_CLK,
+    .cs_pin = TEST_MCP2515_CS,
+    .rst_pin = TEST_MCP2515_RESET,
+    .int_pin = TEST_MCP2515_INT,
+    .clk = TEST_MCP2515_CLK,
+};
+
+static candev_mcp2515_t mcp2515_dev = { 0 };
 
 #else
 /* add other candev drivers here */
@@ -152,6 +167,7 @@ static void _can_event_callback(candev_t *dev, candev_event_t event, void *arg)
             for (uint8_t i = 0; i < frame->can_dlc; i++) {
                 DEBUG("0x%X ", frame->data[i]);
             }
+
             DEBUG(" ");
 
             /* Store in buffer until user requests the data */
@@ -188,14 +204,19 @@ static void _can_event_callback(candev_t *dev, candev_event_t event, void *arg)
 
 int main(void)
 {
-
     puts("candev test application\n");
 
     isrpipe_init(&rxbuf, (uint8_t *)rx_ringbuf, sizeof(rx_ringbuf));
-#ifdef BOARD_NATIVE
+#if defined(BOARD_NATIVE)
     puts("Initializing Linux Can device");
     candev_linux_init( &linux_dev, &(candev_linux_conf[0]));    /* vcan0 */
     candev = (candev_t *)&linux_dev;
+
+#elif defined(CAN_DRIVER_MCP2515)
+    printf("Initializing MCP2515");
+    candev_mcp2515_init(&mcp2515_dev, &mcp2515_conf);
+    candev = (candev_t *)&mcp2515_dev;
+
 #else
     /* add initialization for other candev drivers here */
 #endif
