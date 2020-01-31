@@ -88,7 +88,11 @@ static void fill_extended_id(uint32_t id, uint8_t *bytebuf);
 int mcp2515_init(candev_mcp2515_t *dev, void(*irq_handler_cb)(void*))
 {
     int res;
-    gpio_init_int(dev->conf->int_pin, GPIO_IN_PU, GPIO_FALLING, (gpio_cb_t)irq_handler_cb, (void *)dev);
+    res = gpio_init_int(dev->conf->int_pin, GPIO_IN_PU, GPIO_FALLING, (gpio_cb_t)irq_handler_cb, (void *)dev);
+    if(res != 0) {
+        DEBUG("Error setting interrupt pin!\n");
+        return -1;
+    }
     gpio_init(dev->conf->rst_pin, GPIO_OUT);
     /*the CS pin should be initialized & set in board.c to avoid conflict with other SPI devices */
 
@@ -166,7 +170,7 @@ int mcp2515_receive(candev_mcp2515_t *dev, struct can_frame *frame, int mailbox)
 
     /* extended id */
     if (inbuf[1] & MCP2515_RX_IDE) {
-        frame->can_id = (inbuf[0] << 21) +
+        frame->can_id = ((uint32_t)inbuf[0] << 21) +
            (((uint32_t)inbuf[1] & 0xE0) << 13) +
            (((uint32_t)inbuf[1] & 0x03) << 16) +
            ((uint32_t)inbuf[2] << 8) +

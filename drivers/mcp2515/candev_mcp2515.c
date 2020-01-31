@@ -54,15 +54,16 @@ static void _isr(candev_t *candev);
 static int _set(candev_t *candev, canopt_t opt, void *value, size_t value_len);
 static int _get(candev_t *candev, canopt_t opt, void *value, size_t max_len);
 static int _abort(candev_t *candev, const struct can_frame *frame);
-static int _set_filter(candev_t *dev, const struct can_filter * filter);
-static int _remove_filter(candev_t *dev, const struct can_filter * filter);
+static int _set_filter(candev_t *dev, const struct can_filter *filter);
+static int _remove_filter(candev_t *dev, const struct can_filter *filter);
 
 static void _irq_rx(candev_mcp2515_t *dev, int handle);
 static void _irq_tx(candev_mcp2515_t *dev, int handle);
 static void _irq_error(candev_mcp2515_t *dev);
 static void _irq_message_error(candev_mcp2515_t *dev);
 static void _irq_wakeup(const candev_mcp2515_t *dev);
-static void _send_event(const candev_mcp2515_t *dev, candev_event_t event, void *arg);
+static void _send_event(const candev_mcp2515_t *dev, candev_event_t event,
+                        void *arg);
 
 static const candev_driver_t candev_mcp2515_driver = {
     .send = _send,
@@ -91,13 +92,15 @@ static inline int _max_filters(int mailbox)
     return mailbox == 0 ? MCP2515_FILTERS_MB0 : MCP2515_FILTERS_MB1;
 }
 
-void candev_mcp2515_init(candev_mcp2515_t *dev, const candev_mcp2515_conf_t *conf)
+void candev_mcp2515_init(candev_mcp2515_t *dev,
+                         const candev_mcp2515_conf_t *conf)
 {
     memset(dev, 0, sizeof(*dev));
     dev->candev.driver = &candev_mcp2515_driver;
 
     struct can_bittiming timing = { .bitrate = CANDEV_MCP2515_DEFAULT_BITRATE,
-                .sample_point = CANDEV_MCP2515_DEFAULT_SPT };
+                                    .sample_point =
+                                        CANDEV_MCP2515_DEFAULT_SPT };
     can_device_calc_bittiming(conf->clk / 2, &bittiming_const, &timing);
 
     memcpy(&dev->candev.bittiming, &timing, sizeof(timing));
@@ -114,7 +117,8 @@ void candev_mcp2515_init(candev_mcp2515_t *dev, const candev_mcp2515_conf_t *con
 
 static void _mcp2515_irq_handler(void *arg)
 {
-    candev_mcp2515_t *candev = (candev_mcp2515_t *) arg;
+    candev_mcp2515_t *candev = (candev_mcp2515_t *)arg;
+
     _send_event(candev, CANDEV_EVENT_ISR, NULL);
 }
 
@@ -151,7 +155,7 @@ static int _send(candev_t *candev, const struct can_frame *frame)
 
     mode = mcp2515_get_mode(dev);
     if (mode != MODE_NORMAL && mode != MODE_LOOPBACK) {
-       return -EINVAL; 
+        return -EINVAL;
     }
 
     DEBUG("Inside mcp2515 send\n");
@@ -201,7 +205,7 @@ static void _isr(candev_t *candev)
     uint8_t flag;
     candev_mcp2515_t *dev = (candev_mcp2515_t *)candev;
 
-    while((flag = mcp2515_get_irq(dev))) {
+    while ((flag = mcp2515_get_irq(dev))) {
         if (flag & INT_WAKEUP) {
             if (dev->wakeup_src == MCP2515_WKUP_SRC_INTERNAL) {
                 dev->wakeup_src = 0;
@@ -244,43 +248,43 @@ static int _set(candev_t *candev, canopt_t opt, void *value, size_t value_len)
 
     DEBUG("Inside mcp2515 set opt=%d\n", opt);
     switch (opt) {
-    case CANOPT_BITTIMING:       /**< bit timing parameter */
-        if (value_len < sizeof(candev->bittiming)) {
-            res = -EOVERFLOW;
-        }
-        else {
-            memcpy(&candev->bittiming, value, sizeof(candev->bittiming));
-            res = _init(candev);
-            if (res == 0) {
-                res = sizeof(candev->bittiming);
+        case CANOPT_BITTIMING:   /**< bit timing parameter */
+            if (value_len < sizeof(candev->bittiming)) {
+                res = -EOVERFLOW;
             }
+            else {
+                memcpy(&candev->bittiming, value, sizeof(candev->bittiming));
+                res = _init(candev);
+                if (res == 0) {
+                    res = sizeof(candev->bittiming);
+                }
 
-        }
-        break;
-    case CANOPT_STATE:
-        if (value_len < sizeof(uint8_t)) {
-            res = -EOVERFLOW;
-        }
-        else {
-            switch (*((canopt_state_t *)value)) {
-            case CANOPT_STATE_LISTEN_ONLY:
-                res = mcp2515_set_mode(dev, MODE_LISTEN_ONLY);
-                break;
-            case CANOPT_STATE_OFF:
-            case CANOPT_STATE_SLEEP:
-                res = mcp2515_set_mode(dev, MODE_SLEEP);
-                break;
-            case CANOPT_STATE_ON:
-                res = mcp2515_set_mode(dev, MODE_NORMAL);
-                break;
-            default:
-                res = -ENOTSUP;
-                break;
             }
-        }
-        break;
-    default:
-        res = -ENOTSUP;
+            break;
+        case CANOPT_STATE:
+            if (value_len < sizeof(uint8_t)) {
+                res = -EOVERFLOW;
+            }
+            else {
+                switch (*((canopt_state_t *)value)) {
+                    case CANOPT_STATE_LISTEN_ONLY:
+                        res = mcp2515_set_mode(dev, MODE_LISTEN_ONLY);
+                        break;
+                    case CANOPT_STATE_OFF:
+                    case CANOPT_STATE_SLEEP:
+                        res = mcp2515_set_mode(dev, MODE_SLEEP);
+                        break;
+                    case CANOPT_STATE_ON:
+                        res = mcp2515_set_mode(dev, MODE_NORMAL);
+                        break;
+                    default:
+                        res = -ENOTSUP;
+                        break;
+                }
+            }
+            break;
+        default:
+            res = -ENOTSUP;
     }
 
     return res;
@@ -293,44 +297,44 @@ static int _get(candev_t *candev, canopt_t opt, void *value, size_t max_len)
 
     DEBUG("Inside mcp2515 get opt=%d\n", opt);
     switch (opt) {
-    case CANOPT_BITTIMING:
-        if (max_len < sizeof(candev->bittiming)) {
-            res = -EOVERFLOW;
-        }
-        else {
-            memcpy(value, &candev->bittiming, sizeof(candev->bittiming));
-            res = sizeof(candev->bittiming);
-        }
-        break;
-    case CANOPT_RX_FILTERS:      /**< rx filters */
-        if (max_len % sizeof(struct can_filter) != 0) {
-            res = -EOVERFLOW;
-        }
-        else {
-            res = 1;
-        }
-        break;
-    case CANOPT_BITTIMING_CONST:
-        if (max_len < sizeof(bittiming_const)) {
-            res = -EOVERFLOW;
-        }
-        else {
-            memcpy(value, &bittiming_const, sizeof(bittiming_const));
-            res = sizeof(bittiming_const);
-        }
-        break;
-    case CANOPT_CLOCK:
-        if (max_len < sizeof(uint32_t)) {
-            res = -EOVERFLOW;
-        }
-        else {
-            *((uint32_t *)value) = (uint32_t)(dev->conf->clk / 2);
-            res = sizeof(uint32_t);
-        }
-        break;
-    default:
-        res = -ENOTSUP;
-        break;
+        case CANOPT_BITTIMING:
+            if (max_len < sizeof(candev->bittiming)) {
+                res = -EOVERFLOW;
+            }
+            else {
+                memcpy(value, &candev->bittiming, sizeof(candev->bittiming));
+                res = sizeof(candev->bittiming);
+            }
+            break;
+        case CANOPT_RX_FILTERS:  /**< rx filters */
+            if (max_len % sizeof(struct can_filter) != 0) {
+                res = -EOVERFLOW;
+            }
+            else {
+                res = 1;
+            }
+            break;
+        case CANOPT_BITTIMING_CONST:
+            if (max_len < sizeof(bittiming_const)) {
+                res = -EOVERFLOW;
+            }
+            else {
+                memcpy(value, &bittiming_const, sizeof(bittiming_const));
+                res = sizeof(bittiming_const);
+            }
+            break;
+        case CANOPT_CLOCK:
+            if (max_len < sizeof(uint32_t)) {
+                res = -EOVERFLOW;
+            }
+            else {
+                *((uint32_t *)value) = (uint32_t)(dev->conf->clk / 2);
+                res = sizeof(uint32_t);
+            }
+            break;
+        default:
+            res = -ENOTSUP;
+            break;
     }
 
     return res;
@@ -344,7 +348,7 @@ static int _set_filter(candev_t *dev, const struct can_filter *filter)
     int res = -1;
     enum mcp2515_mode mode;
 
-    candev_mcp2515_t *dev_mcp = (candev_mcp2515_t *) dev;
+    candev_mcp2515_t *dev_mcp = (candev_mcp2515_t *)dev;
 
     if (f.can_mask == 0) {
         return -EINVAL; /* invalid mask */
@@ -371,7 +375,8 @@ static int _set_filter(candev_t *dev, const struct can_filter *filter)
             /* set mask */
             mcp2515_set_mask(dev_mcp, mailbox_index, f.can_mask);
             /* set filter */
-            mcp2515_set_filter(dev_mcp, MCP2515_FILTERS_MB0 * mailbox_index, f.can_id);
+            mcp2515_set_filter(dev_mcp, MCP2515_FILTERS_MB0 * mailbox_index,
+                               f.can_id);
 
             /* save filter */
             dev_mcp->masks[mailbox_index] = f.can_mask;
@@ -394,7 +399,9 @@ static int _set_filter(candev_t *dev, const struct can_filter *filter)
             /* an empty space is found */
             if (filter_pos < _max_filters(mailbox_index)) {
                 /* set filter on this memory space */
-                mcp2515_set_filter(dev_mcp, MCP2515_FILTERS_MB0 * mailbox_index + filter_pos, f.can_id);
+                mcp2515_set_filter(dev_mcp,
+                                   MCP2515_FILTERS_MB0 * mailbox_index + filter_pos,
+                                   f.can_id);
 
                 /* save filter */
                 dev_mcp->filter_ids[mailbox_index][filter_pos] = f.can_id;
@@ -419,7 +426,7 @@ static int _remove_filter(candev_t *dev, const struct can_filter *filter)
     int res = 0;
     enum mcp2515_mode mode;
 
-    candev_mcp2515_t *dev_mcp = (candev_mcp2515_t *) dev;
+    candev_mcp2515_t *dev_mcp = (candev_mcp2515_t *)dev;
 
     if (f.can_mask == 0) {
         return -1; /* invalid mask */
@@ -427,7 +434,7 @@ static int _remove_filter(candev_t *dev, const struct can_filter *filter)
 
     mode = mcp2515_get_mode(dev_mcp);
     res = mcp2515_set_mode(dev_mcp, MODE_CONFIG);
-    if(res < 0) {
+    if (res < 0) {
         return -1;
     }
 
@@ -453,7 +460,9 @@ static int _remove_filter(candev_t *dev, const struct can_filter *filter)
             /* filter id found */
             if (filter_pos < _max_filters(mailbox_index)) {
                 /* remove filter */
-                mcp2515_set_filter(dev_mcp, MCP2515_FILTERS_MB0 * mailbox_index + filter_pos, CAN_EFF_MASK);
+                mcp2515_set_filter(dev_mcp,
+                                   MCP2515_FILTERS_MB0 * mailbox_index + filter_pos,
+                                   CAN_EFF_MASK);
                 /* save modification */
                 dev_mcp->filter_ids[mailbox_index][filter_pos] = 0;
 
@@ -504,23 +513,24 @@ static void _irq_tx(candev_mcp2515_t *dev, int box)
 static void _irq_error(candev_mcp2515_t *dev)
 {
     uint8_t err;
+
     DEBUG("Inside mcp2515 error irq\n");
 
     err = mcp2515_get_errors(dev);
 
-    if(err & (ERR_WARNING | ERR_RX_WARNING | ERR_TX_WARNING)) {
+    if (err & (ERR_WARNING | ERR_RX_WARNING | ERR_TX_WARNING)) {
         DEBUG("Error Warning\n");
         _send_event(dev, CANDEV_EVENT_ERROR_WARNING, NULL);
     }
-    else if(err & (ERR_RX_PASSIVE | ERR_TX_PASSIVE)) {
+    else if (err & (ERR_RX_PASSIVE | ERR_TX_PASSIVE)) {
         DEBUG("Error Passive\n");
         _send_event(dev, CANDEV_EVENT_ERROR_PASSIVE, NULL);
     }
-    else if(err & ERR_TX_BUS_OFF) {
+    else if (err & ERR_TX_BUS_OFF) {
         DEBUG("Buss Off\n");
         _send_event(dev, CANDEV_EVENT_BUS_OFF, NULL);
     }
-    else if(err & (ERR_RX_0_OVERFLOW | ERR_RX_1_OVERFLOW)) {
+    else if (err & (ERR_RX_0_OVERFLOW | ERR_RX_1_OVERFLOW)) {
         DEBUG("RX overflow\n");
         _send_event(dev, CANDEV_EVENT_RX_ERROR, NULL);
     }
@@ -528,8 +538,8 @@ static void _irq_error(candev_mcp2515_t *dev)
 
 static void _irq_message_error(candev_mcp2515_t *dev)
 {
-    (void) dev;
-#if(0)
+    (void)dev;
+#if (0)
     int box;
 
     DEBUG("Inside mcp2515 message error irq\n");
@@ -543,7 +553,8 @@ static void _irq_message_error(candev_mcp2515_t *dev)
             xtimer_remove(&dev->tx_mailbox[box].timer);
             mutex_unlock(&dev->tx_mutex);
 
-            _send_event(dev, CANDEV_EVENT_TIMEOUT_TX_CONF, (void *) dev->tx_mailbox[box].pkt);
+            _send_event(dev, CANDEV_EVENT_TIMEOUT_TX_CONF,
+                        (void *)dev->tx_mailbox[box].pkt);
 
             mutex_lock(&dev->tx_mutex);
             dev->tx_mailbox[box].pkt = NULL;
@@ -560,9 +571,10 @@ static void _irq_wakeup(const candev_mcp2515_t *dev)
     _send_event(dev, CANDEV_EVENT_WAKE_UP, NULL);
 }
 
-static void _send_event(const candev_mcp2515_t *dev, candev_event_t event, void *arg)
+static void _send_event(const candev_mcp2515_t *dev, candev_event_t event,
+                        void *arg)
 {
-    candev_t *candev = (candev_t *) dev;
+    candev_t *candev = (candev_t *)dev;
 
     if (candev->event_callback) {
         candev->event_callback(candev, event, arg);
