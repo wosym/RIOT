@@ -25,11 +25,10 @@
 
 #include <debug.h>
 #include <errno.h>
-#include <isrpipe.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <isrpipe.h>
 #include "shell.h"
 #include "can/device.h"
 
@@ -73,14 +72,21 @@ candev_mcp2515_conf_t mcp2515_conf = {
 };
 
 candev_mcp2515_t mcp2515_dev = { 0 };
+
+#elif defined(BOARD_NATIVE)
+
+#include <candev_linux.h>
+
+candev_linux_t linux_dev = { 0 };
+
 #else
 /* add other candev drivers here */
 #endif
 
-static candev_t *candev = NULL;
-
 #define RX_RINGBUFFER_SIZE 128      //Needs to be a power of 2!
 isrpipe_t rxbuf;
+
+static candev_t *candev = NULL;
 
 static int _send(int argc, char **argv)
 {
@@ -186,7 +192,7 @@ static void _can_event_callback(candev_t *dev, candev_event_t event, void *arg)
             for (uint8_t i = 0; i < frame->can_dlc; i++) {
                 DEBUG("0x%X ", frame->data[i]);
             }
-            DEBUG("");
+            DEBUG(" ");
 
             //Store in buffer until user requests the data
             isrpipe_write_one(&rxbuf,
@@ -222,12 +228,21 @@ static void _can_event_callback(candev_t *dev, candev_event_t event, void *arg)
 
 int main(void)
 {
+    uint8_t rx_ringbuf[RX_RINGBUFFER_SIZE] = { 0 };
+    (void) _can_event_callback;
+
     puts("candev test application\n");
 
+    isrpipe_init(&rxbuf, (uint8_t *)rx_ringbuf, sizeof(rx_ringbuf));
 #ifdef CAN_DRIVER_MCP2515
     puts("Initializing MCP2515");
     candev_mcp2515_init(&mcp2515_dev, &mcp2515_conf);
     candev = (candev_t *)&mcp2515_dev;
+
+#elif defined(BOARD_NATIVE)
+    puts("Initializing Linux Can device");
+    candev_linux_init( &linux_dev, &(candev_linux_conf[0]));    //vcan0
+    candev = (candev_t *)&linux_dev;
 #else
     /* add initialization for other candev drivers here */
 #endif
@@ -238,9 +253,6 @@ int main(void)
     candev->isr_arg = NULL;
 
     candev->driver->init(candev);
-
-    uint8_t rx_ringbuf[RX_RINGBUFFER_SIZE] = { 0 };
-    isrpipe_init(&rxbuf, (uint8_t *)rx_ringbuf, sizeof(rx_ringbuf));
 
     char line_buf[SHELL_DEFAULT_BUFSIZE];
     shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);

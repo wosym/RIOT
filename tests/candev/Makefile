@@ -3,6 +3,7 @@ include ../Makefile.tests_common
 
 USEMODULE += shell
 USEMODULE += can
+USEMODULE += isrpipe
 
 # define the CAN driver you want to use here
 CAN_DRIVER ?= MCP2515
@@ -22,7 +23,7 @@ ifeq ($(CAN_DRIVER), MCP2515)
 	TEST_MCP2515_CLK ?=\(8000000ul\)
 	TEST_MCP2515_BITRATE ?= \(125000\)
 
-	#INT_PIN = PB3 --> requires AVR bank1 on avr. Chance accordingly to used hardware.
+	#INT_PIN = PB3 --> requires AVR bank1 on avr. Change accordingly to used hardware.
 	USEMODULE += atmega_pcint1
 
 	# export parameters
