@@ -81,12 +81,16 @@ int srf04_read(const srf04_t* dev)
     return dev->distance;
 }
 
-int srf04_get_distance(const srf04_t* dev)
+int srf04_get_distance(srf04_t* dev)
 {
+    //dev->distance = -1; //-1 = inval
+
     /* trigger new reading */
     srf04_trigger(dev);
     /* give the sensor the required time for sampling */
-    xtimer_usleep(SRF04_SAMPLE_PERIOD);
+    xtimer_usleep(SRF04_SAMPLE_PERIOD * 2);
+
+    gpio_irq_disable(dev->p.trigger);   //Disable the irq again, in case we receive something after the sample time has ended
     /* get the result */
     if (dev->distance >= SRF04_OK) {
         return ((dev->distance * 100) / SRF04_DISTANCE);
