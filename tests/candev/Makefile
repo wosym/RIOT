@@ -8,6 +8,9 @@ USEMODULE += isrpipe
 # define the CAN driver you want to use here
 CAN_DRIVER ?= MCP2515
 
+BOARD=atmega328p
+PROGRAMMER=usbtiny
+
 ifeq ($(CAN_DRIVER), MCP2515)
     FEATURES_REQUIRED = periph_gpio periph_spi periph_gpio_irq
 
@@ -17,14 +20,15 @@ ifeq ($(CAN_DRIVER), MCP2515)
 	TEST_MCP2515_SPI   ?= SPI_DEV\(0\)
 	TEST_MCP2515_SPI_CLK   ?= SPI_CLK_1MHZ
 	TEST_MCP2515_SPI_MODE   ?= SPI_MODE_0
-	TEST_MCP2515_CS    ?= GPIO_PIN\(PORT_B,4\)
+	TEST_MCP2515_CS    ?= GPIO_PIN\(PORT_B,0\)
 	TEST_MCP2515_RESET ?= GPIO_PIN\(PORT_B,2\)
-	TEST_MCP2515_INT ?= GPIO_PIN\(PORT_B,3\)
+	TEST_MCP2515_INT ?= GPIO_PIN\(PORT_B,1\)
 	TEST_MCP2515_CLK ?=\(8000000ul\)
 	TEST_MCP2515_BITRATE ?= \(125000\)
 
 	#INT_PIN = PB3 --> requires AVR bank1 on avr. Change accordingly to used hardware.
 	USEMODULE += atmega_pcint1
+	USEMODULE += atmega_pcint0
 
 	# export parameters
 	CFLAGS += -DTEST_MCP2515_SPI=$(TEST_MCP2515_SPI)

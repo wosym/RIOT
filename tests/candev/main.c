@@ -231,7 +231,7 @@ int main(void)
     uint8_t rx_ringbuf[RX_RINGBUFFER_SIZE] = { 0 };
     (void) _can_event_callback;
 
-    puts("candev test application\n");
+    //puts("candev test application\n");
 
     isrpipe_init(&rxbuf, (uint8_t *)rx_ringbuf, sizeof(rx_ringbuf));
 #ifdef CAN_DRIVER_MCP2515
