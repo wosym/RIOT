@@ -12,7 +12,10 @@ DEVELHELP ?= 1
 
 QUIET ?= 1
 
-CFLAGS += -I$(CURDIR)/GLCD_SED1531/	#Why does this trigger missing-include dirs??
+USEMODULE += periph_gpio
+USEMODULE += xtimer
+
+#CFLAGS += -I$(CURDIR)/GLCD_SED1531/	#Why does this trigger missing-include dirs??
 
 #USEMODULE += GLCD_SED1531
 #EXTERNAL_MODULE_DIRS += $(CURDIR)/GLCD_SED1531

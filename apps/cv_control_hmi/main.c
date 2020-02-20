@@ -1,9 +1,10 @@
 #include <avr/pgmspace.h>
 #include <stdio.h>
+#include <xtimer.h>
 
-#include "GLCD_SED1531/glcd_io_avrgcc_atmega328p.h"
-#include "GLCD_SED1531/glcd.h"
-#include "GLCD_SED1531/proportional_font.h"
+#include "glcd_io_avrgcc_atmega328p.h"
+#include "glcd.h"
+#include "proportional_font.h"
 
 int main(void)
 {
@@ -15,9 +16,14 @@ int main(void)
     glcd_init();
 
     glcd_clear_display();
+
+    glcd_set_indicator(GLCD_INDICATOR_0, 1);
     
-    glcd_draw_text(3, 10, &proportional_font, "Hello RIOT!");
-    while(1);
+    //glcd_draw_text_P(3, 10, &proportional_font, PSTR("Hello RIOT!"));
+    while(1){
+        //puts_P(PSTR("Still working..."));
+        //glcd_draw_text(3, 10, &proportional_font, ("Hello RIOT!"));
+    }
     
 
     return 0;
