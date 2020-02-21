@@ -27,32 +27,40 @@
 /* Fallback defines */
 
 #if !defined(GLCD_FLASH)
+#error "flash not def!"
 #define GLCD_FLASH(type, name) const type name
 #endif
 
 #if !defined(GLCD_FLASH_ARRAY)
+//#error "flash array not def!"
 #define GLCD_FLASH_ARRAY(element_type, name) GLCD_FLASH(element_type, name[])
 #endif
 
 #if !defined(GLCD_FLASH_STRING)
+//#error "flash string not def!"
 #define GLCD_FLASH_STRING(name, value) GLCD_FLASH_ARRAY(char, name) = value
 #endif
 
 #if !defined(GLCD_FLASH_PTR)
+#error "flash ptr not def!"
 #define GLCD_FLASH_PTR(type) const type*
 #endif
 
 #if !defined(GLCD_IO_DELAY_READ)
+#error "delay read not def!"
 #define GLCD_IO_DELAY_READ()
 #endif
 
 #if !defined(GLCD_IO_DELAY_WRITE)
+//#error "delay write not def!"
 #define GLCD_IO_DELAY_WRITE()
 #endif
 
-#if !defined(GLCD_IO_INIT)
-#define GLCD_IO_INIT()
-#endif
+//Turned into a function!
+//#if !defined(GLCD_IO_INIT)
+//#error "glcd_io_init not def!!"
+//#define GLCD_IO_INIT()
+//#endif
 
 /* Types */
 typedef GLCD_FLASH_PTR(char) glcd_font_data_ptr;

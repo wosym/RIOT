@@ -48,13 +48,13 @@ void GLCD_IO_DATA_DIR_INPUT(void)
 void GLCD_IO_DATA_DIR_OUTPUT(void)
 {  
     //DDRD |= 0b11111100;
+    //DDRB |= 0b00011000;
     gpio_init(GPIO_PIN(PORT_D, 2), GPIO_OUT);
     gpio_init(GPIO_PIN(PORT_D, 3), GPIO_OUT);
     gpio_init(GPIO_PIN(PORT_D, 4), GPIO_OUT);
     gpio_init(GPIO_PIN(PORT_D, 5), GPIO_OUT);
     gpio_init(GPIO_PIN(PORT_D, 6), GPIO_OUT);
     gpio_init(GPIO_PIN(PORT_D, 7), GPIO_OUT);
-    //DDRB |= 0b00011000;
     gpio_init(GPIO_PIN(PORT_B, 3), GPIO_OUT);
     gpio_init(GPIO_PIN(PORT_B, 4), GPIO_OUT);
 }

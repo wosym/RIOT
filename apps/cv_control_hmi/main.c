@@ -15,14 +15,21 @@ int main(void)
 
     glcd_init();
 
+    xtimer_usleep(100000);
     glcd_clear_display();
+    xtimer_usleep(100000);
 
     glcd_set_indicator(GLCD_INDICATOR_0, 1);
+    xtimer_usleep(100000);
     
-    //glcd_draw_text_P(3, 10, &proportional_font, PSTR("Hello RIOT!"));
+    glcd_draw_text(3, 10, &proportional_font, "Hello RIOT!");
+    xtimer_usleep(100000);
     while(1){
         //puts_P(PSTR("Still working..."));
-        //glcd_draw_text(3, 10, &proportional_font, ("Hello RIOT!"));
+        glcd_draw_text(3, 10, &proportional_font, ("Hello RIOT!"));
+        xtimer_usleep(100000);
+        glcd_draw_text_P(3, 10, &proportional_font, ("Hello RIOT!"));
+        xtimer_usleep(100000);
     }
     
 

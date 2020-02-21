@@ -135,7 +135,6 @@ void glcd_init(void)
         GLCD_CMD_ELECTRONIC_CONTROL(15),
         GLCD_CMD_INITIAL_DISPLAY_LINE(0)
     };
-
     GLCD_IO_INIT();
 
     glcd_wait_while_busy();
@@ -325,22 +324,14 @@ unsigned char glcd_draw_text_int(unsigned char page,
                                         const char* text,
                                         unsigned char text_in_flash)
 {
-    int i = 0;
-    printf("%d\n", i++);
     glcd_page_update_start(page, column);
-    printf("%d\n", i++);
     glcd_prepare_write_data();
-    printf("%d\n", i++);
 
     unsigned char first = GLCD_FLASH_READ_BYTE(&(font->first));
-    printf("%d\n", i++);
     unsigned char interspacing = GLCD_FLASH_READ_BYTE(&(font->interspacing));
-    printf("%d\n", i++);
     const glcd_font_data_ptr* lookup = (const glcd_font_data_ptr*)GLCD_FLASH_READ_WORD(&(font->lookup));
-    printf("%d\n", i++);
 
     unsigned char c = text_in_flash ? GLCD_FLASH_READ_BYTE(text) : *text;
-    printf("%d\n", i++);
 
     while(c != 0)
     {
@@ -360,10 +351,8 @@ unsigned char glcd_draw_text_int(unsigned char page,
         ++text;
         c = text_in_flash ? GLCD_FLASH_READ_BYTE(text) : *text;
     }
-    printf("%d\n", i++);
 
     glcd_page_update_end();
-    printf("%d\n", i++);
 
     return column;
 }

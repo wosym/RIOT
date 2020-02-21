@@ -88,7 +88,8 @@
 /* AVR-GCC Flash definitions */
 #include <avr/pgmspace.h>
 
-#define GLCD_FLASH(type, name)          const type const name   //NOTE: I removed PROGMEM HERE! Should we add PSTR at the call? How?
+//#error "We get here!"
+#define GLCD_FLASH(type, name)          const type const name  //NOTE: I removed PROGMEM HERE! Should we add PSTR at the call? How?
 #define GLCD_FLASH_READ_BYTE(address)   pgm_read_byte(address)         
 #define GLCD_FLASH_READ_WORD(address)   pgm_read_word(address) 
 #define GLCD_FLASH_PTR(type)            const type* PROGMEM
