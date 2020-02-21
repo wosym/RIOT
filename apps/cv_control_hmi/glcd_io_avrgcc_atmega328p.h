@@ -83,13 +83,13 @@
 //#define GLCD_IO_PIN_E_1()               PORTB |= _BV(PB2)
 #define GLCD_IO_PIN_E_1()               gpio_set(GPIO_PIN(PORT_B, 2))
 
-#define GLCD_IO_DELAY_READ()            __asm volatile ("nop")
+//#define GLCD_IO_DELAY_READ()            __asm volatile ("nop")
+#define GLCD_IO_DELAY_READ()            
 
 /* AVR-GCC Flash definitions */
 #include <avr/pgmspace.h>
 
-//#error "We get here!"
-#define GLCD_FLASH(type, name)          const type const name  //NOTE: I removed PROGMEM HERE! Should we add PSTR at the call? How?
+#define GLCD_FLASH(type, name)          const type const name PROGMEM //NOTE: I removed PROGMEM HERE! Should we add PSTR at the call? How?
 #define GLCD_FLASH_READ_BYTE(address)   pgm_read_byte(address)         
 #define GLCD_FLASH_READ_WORD(address)   pgm_read_word(address) 
 #define GLCD_FLASH_PTR(type)            const type* PROGMEM

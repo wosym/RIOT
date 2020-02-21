@@ -1,6 +1,17 @@
 #include "glcd_io_avrgcc_atmega328p.c"
 #include "glcd.h"
 
+    const char init_data[] PROGMEM = 
+    {
+        GLCD_CMD_ADC_REVERSE,
+        GLCD_CMD_LCD_BIAS_1_8,
+        GLCD_CMD_POWER_ALL,
+        GLCD_CMD_DISPLAY_NORMAL,
+        GLCD_CMD_ENTIRE_DISPLAY_NORMAL,
+        GLCD_CMD_DISPLAY_ON,
+        GLCD_CMD_ELECTRONIC_CONTROL(15),
+        GLCD_CMD_INITIAL_DISPLAY_LINE(0)
+    };
 /* Low level functions */
 
 void glcd_prepare_write_cmd(void)
@@ -124,6 +135,7 @@ void glcd_page_update_end(void)
  */
 void glcd_init(void)
 {
+    /*
     GLCD_FLASH(char, init_data[]) =
     {
         GLCD_CMD_ADC_REVERSE,
@@ -135,6 +147,7 @@ void glcd_init(void)
         GLCD_CMD_ELECTRONIC_CONTROL(15),
         GLCD_CMD_INITIAL_DISPLAY_LINE(0)
     };
+    */
     GLCD_IO_INIT();
 
     glcd_wait_while_busy();
