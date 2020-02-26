@@ -63,25 +63,37 @@
 
 */
 
+// Free PB pins for SPI!
+/*
+    AVR      GLCD
+    -----    ----
+    PC0-PC1  D0-D1       
+    PD2-PD7  D2-D7
+    PC2      A0
+    PC3      RW
+    PC4      E 
+
+*/
+
 
 #include <avr/io.h>
 
 //#define GLCD_IO_INIT()                  DDRB = 0x07;
 
 //#define GLCD_IO_PIN_A0_0()              PORTB &= ~_BV(PB0)
-#define GLCD_IO_PIN_A0_0()              gpio_clear(GPIO_PIN(PORT_B, 0))
+#define GLCD_IO_PIN_A0_0()              gpio_clear(GPIO_PIN(PORT_C, 2))
 //#define GLCD_IO_PIN_A0_1()              PORTB |= _BV(PB0)
-#define GLCD_IO_PIN_A0_1()              gpio_set(GPIO_PIN(PORT_B, 0))
+#define GLCD_IO_PIN_A0_1()              gpio_set(GPIO_PIN(PORT_C, 2))
 
 //#define GLCD_IO_PIN_RW_0()              PORTB &= ~_BV(PB1)
-#define GLCD_IO_PIN_RW_0()              gpio_clear(GPIO_PIN(PORT_B, 1))
+#define GLCD_IO_PIN_RW_0()              gpio_clear(GPIO_PIN(PORT_C, 3))
 //#define GLCD_IO_PIN_RW_1()              PORTB |= _BV(PB1)
-#define GLCD_IO_PIN_RW_1()              gpio_set(GPIO_PIN(PORT_B, 1))
+#define GLCD_IO_PIN_RW_1()              gpio_set(GPIO_PIN(PORT_C, 3))
 
 //#define GLCD_IO_PIN_E_0()               PORTB &= ~_BV(PB2)
-#define GLCD_IO_PIN_E_0()               gpio_clear(GPIO_PIN(PORT_B, 2))
+#define GLCD_IO_PIN_E_0()               gpio_clear(GPIO_PIN(PORT_C, 4))
 //#define GLCD_IO_PIN_E_1()               PORTB |= _BV(PB2)
-#define GLCD_IO_PIN_E_1()               gpio_set(GPIO_PIN(PORT_B, 2))
+#define GLCD_IO_PIN_E_1()               gpio_set(GPIO_PIN(PORT_C, 4))
 
 //#define GLCD_IO_DELAY_READ()            __asm volatile ("nop")
 #define GLCD_IO_DELAY_READ()            
