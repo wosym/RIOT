@@ -243,7 +243,8 @@ int main(void)
     glcd_clear_display();
 
     isrpipe_init(&rxbuf, (uint8_t *)rx_ringbuf, sizeof(rx_ringbuf));
-    puts("Initializing MCP2515");
+    //puts("Initializing MCP2515");
+    puts("IM");
     candev_mcp2515_init(&mcp2515_dev, &mcp2515_conf);
     candev = (candev_t *)&mcp2515_dev;
 
@@ -253,6 +254,12 @@ int main(void)
     candev->isr_arg = NULL;
 
     candev->driver->init(candev);
+    puts("dr");
+
+    glcd_draw_text(1, 20, &proportional_font, "abcd");
+    char tmp[] = "aaa";
+    glcd_draw_text(3, 10, &proportional_font, tmp);
+
 
     char line_buf[SHELL_DEFAULT_BUFSIZE];
     shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);

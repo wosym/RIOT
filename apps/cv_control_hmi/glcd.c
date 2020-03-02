@@ -1,5 +1,6 @@
 #include "glcd_io_avrgcc_atmega328p.c"
 #include "glcd.h"
+#include "xtimer.h"
 
     const char init_data[] PROGMEM = 
     {
@@ -85,7 +86,8 @@ unsigned char glcd_read(void)
     GLCD_IO_PIN_E_0();
     GLCD_IO_PIN_E_1();
     GLCD_IO_DELAY_READ();
-    data = GLCD_IO_DATA_INPUT();
+    //data = GLCD_IO_DATA_INPUT();
+    data = 0;
     GLCD_IO_PIN_E_0();
 
     return data;
@@ -105,11 +107,12 @@ void glcd_update_data(unsigned char pixels, unsigned char mask)
 
 void glcd_wait_while_busy(void)
 {
-    glcd_prepare_read_status();
-    while(glcd_read() & GLCD_STATUS_BUSY) 
-    {
+    //glcd_prepare_read_status();
+    //while(glcd_read() & GLCD_STATUS_BUSY) 
+    //{
         /* Do nothing */
-    }
+    //}
+    xtimer_usleep(1000);
 }
 
 void glcd_page_update_start(unsigned char page, unsigned char column)
