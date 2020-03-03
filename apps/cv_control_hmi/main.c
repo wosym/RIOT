@@ -20,7 +20,7 @@
 
 
 
-#define ENABLE_DEBUG (0)
+#define ENABLE_DEBUG (1)
 
 #include <debug.h>
 #include <errno.h>
@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <isrpipe.h>
-#include "shell.h"
+//#include "shell.h"
 #include "can/device.h"
 
 #include "candev_mcp2515.h"
@@ -65,6 +65,8 @@
 #ifndef CANDEV_MCP2515_DEFAULT_BITRATE
 #error "CANDEV_MCP2515_DEFAULT_BITRATE not defined"
 #endif
+
+#define MAX_LCD_WIDTH 90
 
 candev_mcp2515_conf_t mcp2515_conf = {
     .spi = TEST_MCP2515_SPI,
@@ -111,7 +113,7 @@ static int _send(int argc, char **argv)
         DEBUG("sent using mailbox: %d\n", ret);
     }
     else {
-        puts("Failed to send CAN-message!");
+        puts_P(PSTR("Failed to send CAN-message!"));
     }
 
     return 0;
@@ -128,14 +130,14 @@ static int _receive(int argc, char **argv)
     if (argc > 1) {
         n = strtol(argv[1], &pEnd, 10);
         if (n < 1) {
-            puts("Usage: receive <number>");
+            puts_P(PSTR("Usage: receive <number>"));
             return -1;
         }
     }
 
     for (int i = 0; i < n; i++) {
 
-        puts("Reading from Rxbuf...");
+        puts_P(PSTR("Reading from Rxbuf..."));
         isrpipe_read(&rxbuf, buf, 4);       //id
         can_id = (buf[0] << 6) | (buf[1] << 4) | (buf[2] << 2) | (buf[3]);
         isrpipe_read(&rxbuf, buf, 1);       //dlc
@@ -151,19 +153,20 @@ static int _receive(int argc, char **argv)
 
     return 0;
 }
-
+/*
 static const shell_command_t shell_commands[] = {
     { "send", "send some data", _send },
     { "receive", "receive some data", _receive },
     { NULL, NULL, NULL }
 };
+*/
 
 static void _can_event_callback(candev_t *dev, candev_event_t event, void *arg)
 {
     (void)arg;
     struct can_frame *frame;
-    char lcd_buf[CAN_MAX_DLEN + 1] = { '\0' };
-    static int rulecounter = 0;
+    char lcd_buf[MAX_LCD_WIDTH] = { '\0' };
+    char tmp = 0;
 
     switch (event) {
         case CANDEV_EVENT_ISR:
@@ -191,29 +194,17 @@ static void _can_event_callback(candev_t *dev, candev_event_t event, void *arg)
             }
             DEBUG(" ");
 
-            //Store in buffer until user requests the data
-            isrpipe_write_one(&rxbuf,
-                              (uint8_t)((frame->can_id & 0x1FFFFFFF) >> 6));        //exclude flags
-            isrpipe_write_one(&rxbuf,
-                              (uint8_t)((frame->can_id & 0xFF0000) >> 4));
-            isrpipe_write_one(&rxbuf, (uint8_t)((frame->can_id & 0xFF00) >> 2));
-            isrpipe_write_one(&rxbuf, (uint8_t)((frame->can_id & 0xFF)));
-
-            isrpipe_write_one(&rxbuf, frame->can_dlc);
-            for (uint8_t i = 0; i < frame->can_dlc; i++) {
-                isrpipe_write_one(&rxbuf, frame->data[i]);
-                lcd_buf[i] = frame->data[i];
+            puts("A");
+            //process received data
+            tmp = frame->data[1];
+            if(frame->data[0] == 0x01) {    //Temperature update
+                printf("%d degC\n", tmp);
+                sprintf(lcd_buf, "%d degC", tmp);
+                printf_P(PSTR("Setting: %s\n"), lcd_buf);
+                glcd_draw_text(1, 20, &proportional_font, lcd_buf);
+                puts("l");
             }
-
-
-            if(rulecounter == 0) {
-                glcd_clear_display();
-            }
-            glcd_draw_text(rulecounter, 20, &proportional_font, lcd_buf);
-            rulecounter++;
-            if (rulecounter > 5 ) {
-                rulecounter = 0;
-            }
+            puts_P(PSTR("leaving"));
 
             break;
         case CANDEV_EVENT_RX_ERROR:
@@ -243,8 +234,6 @@ int main(void)
     glcd_clear_display();
 
     isrpipe_init(&rxbuf, (uint8_t *)rx_ringbuf, sizeof(rx_ringbuf));
-    //puts("Initializing MCP2515");
-    puts("IM");
     candev_mcp2515_init(&mcp2515_dev, &mcp2515_conf);
     candev = (candev_t *)&mcp2515_dev;
 
@@ -254,14 +243,27 @@ int main(void)
     candev->isr_arg = NULL;
 
     candev->driver->init(candev);
-    puts("dr");
 
-    glcd_draw_text(1, 20, &proportional_font, "abcd");
-    char tmp[] = "aaa";
-    glcd_draw_text(3, 10, &proportional_font, tmp);
+    glcd_draw_text_P(0, 0, &proportional_font, PSTR("Gewenste temperatuur: "));
+    glcd_draw_text_P(1, 20, &proportional_font, PSTR("0 degC"));
+    glcd_draw_text_P(2, 0, &proportional_font, PSTR("Huidige temperatuur: "));
+    glcd_draw_text_P(3, 20, &proportional_font, PSTR("0 degC"));
 
-    char line_buf[SHELL_DEFAULT_BUFSIZE];
-    shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
+    char test = 10;
+    char buf[] = { '\0'};
+    printf("%d degC\n", test);
+    sprintf(buf, "%d degC", test);
+    printf("Setting: %s\n", buf);
+    glcd_draw_text(1, 20, &proportional_font, buf);
 
+    //char line_buf[SHELL_DEFAULT_BUFSIZE];
+    //shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
+
+(void) _send;
+(void) _receive;
+
+    while(1) {
+        xtimer_sleep(1);
+    }
     return 0;
 }
