@@ -260,7 +260,6 @@ int main(void)
     char tmp[] = "aaa";
     glcd_draw_text(3, 10, &proportional_font, tmp);
 
-
     char line_buf[SHELL_DEFAULT_BUFSIZE];
     shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
 

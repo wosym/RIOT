@@ -106,6 +106,8 @@
 #define GLCD_FLASH_READ_WORD(address)   pgm_read_word(address) 
 #define GLCD_FLASH_PTR(type)            const type* PROGMEM
 
+void shift_data(uint8_t data);
+
 void GLCD_IO_DATA_OUTPUT(unsigned char data);
  
 uint8_t GLCD_IO_DATA_INPUT(void);

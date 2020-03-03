@@ -107,12 +107,12 @@ void glcd_update_data(unsigned char pixels, unsigned char mask)
 
 void glcd_wait_while_busy(void)
 {
-    //glcd_prepare_read_status();
+    glcd_prepare_read_status();
     //while(glcd_read() & GLCD_STATUS_BUSY) 
     //{
         /* Do nothing */
     //}
-    xtimer_usleep(1000);
+    xtimer_usleep(100);
 }
 
 void glcd_page_update_start(unsigned char page, unsigned char column)

@@ -41,10 +41,9 @@ void init_sr(void)
 
 void shift_data(uint8_t data)
 {
-    (void) data;
     for(int i = 0; i < 8; i++) {
         gpio_clear(SRCLK);
-        gpio_write(SER, (data >> (7- i)) & 0x01);
+        gpio_write(SER, (data >> (i)) & 0x01);
         xtimer_usleep(SR_DELAY);
         gpio_set(SRCLK);
         xtimer_usleep(SR_DELAY);
@@ -78,6 +77,7 @@ void GLCD_IO_DATA_OUTPUT(unsigned char data)
  
 uint8_t GLCD_IO_DATA_INPUT(void)
 {
+    puts("r");
     return 0;
     return ((PIND & 0b11111100) | (PINC & 0b00000011)); 
 
@@ -113,6 +113,7 @@ void GLCD_IO_DATA_DIR_INPUT(void)
 
 void GLCD_IO_DATA_DIR_OUTPUT(void)
 {  
+
     return;
     DDRD |= 0b11111100;
     DDRC |= 0b00000011;
@@ -130,6 +131,7 @@ void GLCD_IO_DATA_DIR_OUTPUT(void)
 
 void GLCD_IO_INIT(void)
 {
+    init_sr();
     gpio_init(GPIO_PIN(PORT_C, 2), GPIO_OUT);
     gpio_init(GPIO_PIN(PORT_C, 3), GPIO_OUT);
     gpio_init(GPIO_PIN(PORT_C, 4), GPIO_OUT);
