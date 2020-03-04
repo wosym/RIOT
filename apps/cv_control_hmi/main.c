@@ -20,7 +20,7 @@
 
 
 
-#define ENABLE_DEBUG (1)
+#define ENABLE_DEBUG (0)
 
 #include <debug.h>
 #include <errno.h>
@@ -84,6 +84,10 @@ candev_mcp2515_t mcp2515_dev = { 0 };
 isrpipe_t rxbuf;
 
 static candev_t *candev = NULL;
+
+uint8_t setTemp = 0;
+uint8_t actTemp = 0;
+uint8_t lcd_update = 0;     //lcd requires update
 
 static int _send(int argc, char **argv)
 {
@@ -165,8 +169,6 @@ static void _can_event_callback(candev_t *dev, candev_event_t event, void *arg)
 {
     (void)arg;
     struct can_frame *frame;
-    char lcd_buf[MAX_LCD_WIDTH] = { '\0' };
-    char tmp = 0;
 
     switch (event) {
         case CANDEV_EVENT_ISR:
@@ -194,17 +196,14 @@ static void _can_event_callback(candev_t *dev, candev_event_t event, void *arg)
             }
             DEBUG(" ");
 
-            puts("A");
-            //process received data
-            tmp = frame->data[1];
-            if(frame->data[0] == 0x01) {    //Temperature update
-                printf("%d degC\n", tmp);
-                sprintf(lcd_buf, "%d degC", tmp);
-                printf_P(PSTR("Setting: %s\n"), lcd_buf);
-                glcd_draw_text(1, 20, &proportional_font, lcd_buf);
-                puts("l");
+            //TODO: turn into switch statement? Or remove all together, because we probably won't need this in the final product
+            if(frame->data[0] == 0x01) {    //Update actual temperature
+                actTemp = frame->data[1];
+                lcd_update = 1;
+            } else if (frame->data[0] == 0x02) {    //update set temperature
+                setTemp = frame->data[1];
+                lcd_update = 1;
             }
-            puts_P(PSTR("leaving"));
 
             break;
         case CANDEV_EVENT_RX_ERROR:
@@ -223,6 +222,20 @@ static void _can_event_callback(candev_t *dev, candev_event_t event, void *arg)
             DEBUG("_can_event: unknown event\n");
             break;
     }
+}
+
+void updateLCD(void)
+{
+    char lcd_buf[MAX_LCD_WIDTH] = { '\0' };
+    glcd_clear_display();
+    glcd_draw_text_P(0, 0, &proportional_font, PSTR("Gewenste temperatuur: "));
+    glcd_draw_text_P(2, 0, &proportional_font, PSTR("Huidige temperatuur: "));
+    sprintf(lcd_buf, "%d degC", actTemp);
+    glcd_draw_text(1, 20, &proportional_font, lcd_buf);
+    sprintf(lcd_buf, "%d degC", setTemp);
+    glcd_draw_text(3, 20, &proportional_font, lcd_buf);
+    lcd_update = 0;
+    
 }
 
 int main(void)
@@ -249,21 +262,17 @@ int main(void)
     glcd_draw_text_P(2, 0, &proportional_font, PSTR("Huidige temperatuur: "));
     glcd_draw_text_P(3, 20, &proportional_font, PSTR("0 degC"));
 
-    char test = 10;
-    char buf[] = { '\0'};
-    printf("%d degC\n", test);
-    sprintf(buf, "%d degC", test);
-    printf("Setting: %s\n", buf);
-    glcd_draw_text(1, 20, &proportional_font, buf);
-
     //char line_buf[SHELL_DEFAULT_BUFSIZE];
     //shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
 
-(void) _send;
-(void) _receive;
+    (void) _send;
+    (void) _receive;
 
     while(1) {
         xtimer_sleep(1);
+        if(lcd_update) {
+            updateLCD();
+        }
     }
     return 0;
 }
