@@ -112,7 +112,7 @@ void glcd_wait_while_busy(void)
     //{
         /* Do nothing */
     //}
-    xtimer_usleep(100);
+    xtimer_usleep(1);
 }
 
 void glcd_page_update_start(unsigned char page, unsigned char column)

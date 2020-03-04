@@ -5,23 +5,18 @@
 #define SER     GPIO_PIN(PORT_D, 2)     //Serial in
 #define RCLK    GPIO_PIN(PORT_D, 3)     //Latch
 #define SRCLK   GPIO_PIN(PORT_D, 4)     //Clock
-#define SR_DELAY    1
 
 void clear_sr(void)
 {
     for(int i = 0; i < 8; i++) {
         gpio_clear(SRCLK);
         gpio_clear(SER);
-        xtimer_usleep(SR_DELAY);
         gpio_set(SRCLK);
-        xtimer_usleep(SR_DELAY);
         gpio_clear(SRCLK);
-        xtimer_usleep(SR_DELAY);
 
 
     }
     gpio_set(RCLK);
-    xtimer_usleep(SR_DELAY);
     gpio_clear(RCLK);
 }
 
@@ -44,16 +39,12 @@ void shift_data(uint8_t data)
     for(int i = 0; i < 8; i++) {
         gpio_clear(SRCLK);
         gpio_write(SER, (data >> (i)) & 0x01);
-        xtimer_usleep(SR_DELAY);
         gpio_set(SRCLK);
-        xtimer_usleep(SR_DELAY);
         gpio_clear(SRCLK);
-        xtimer_usleep(SR_DELAY);
 
 
     }
     gpio_set(RCLK);
-    xtimer_usleep(SR_DELAY);
     gpio_clear(RCLK);
 
 

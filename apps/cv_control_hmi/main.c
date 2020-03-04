@@ -87,7 +87,9 @@ static candev_t *candev = NULL;
 
 uint8_t setTemp = 0;
 uint8_t actTemp = 0;
-uint8_t lcd_update = 0;     //lcd requires update
+uint8_t update_actTemp = 0;
+uint8_t update_setTemp = 0;
+
 
 static int _send(int argc, char **argv)
 {
@@ -199,10 +201,10 @@ static void _can_event_callback(candev_t *dev, candev_event_t event, void *arg)
             //TODO: turn into switch statement? Or remove all together, because we probably won't need this in the final product
             if(frame->data[0] == 0x01) {    //Update actual temperature
                 actTemp = frame->data[1];
-                lcd_update = 1;
+                update_actTemp= 1;
             } else if (frame->data[0] == 0x02) {    //update set temperature
                 setTemp = frame->data[1];
-                lcd_update = 1;
+                update_setTemp = 1;
             }
 
             break;
@@ -227,14 +229,15 @@ static void _can_event_callback(candev_t *dev, candev_event_t event, void *arg)
 void updateLCD(void)
 {
     char lcd_buf[MAX_LCD_WIDTH] = { '\0' };
-    glcd_clear_display();
-    glcd_draw_text_P(0, 0, &proportional_font, PSTR("Gewenste temperatuur: "));
-    glcd_draw_text_P(2, 0, &proportional_font, PSTR("Huidige temperatuur: "));
-    sprintf(lcd_buf, "%d degC", actTemp);
-    glcd_draw_text(1, 20, &proportional_font, lcd_buf);
-    sprintf(lcd_buf, "%d degC", setTemp);
-    glcd_draw_text(3, 20, &proportional_font, lcd_buf);
-    lcd_update = 0;
+    if(update_actTemp) {
+        sprintf(lcd_buf, "%d degC", actTemp);
+        glcd_draw_text(1, 20, &proportional_font, lcd_buf);
+        update_actTemp = 0;
+    } else if (update_setTemp) {
+        sprintf(lcd_buf, "%d degC", setTemp);
+        glcd_draw_text(3, 20, &proportional_font, lcd_buf);
+        update_setTemp = 0;
+    }
     
 }
 
@@ -269,8 +272,8 @@ int main(void)
     (void) _receive;
 
     while(1) {
-        xtimer_sleep(1);
-        if(lcd_update) {
+        xtimer_usleep(100000);
+        if(update_actTemp || update_setTemp) {
             updateLCD();
         }
     }
