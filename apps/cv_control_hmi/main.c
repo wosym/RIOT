@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <isrpipe.h>
+#include <periph/gpio.h>
 //#include "shell.h"
 #include "can/device.h"
 
@@ -89,6 +90,11 @@ uint8_t setTemp = 0;
 uint8_t actTemp = 0;
 uint8_t update_actTemp = 0;
 uint8_t update_setTemp = 0;
+
+#define ENC1    GPIO_PIN(PORT_D, 7)
+#define ENC2    GPIO_PIN(PORT_D, 6)
+#define SETTEMP_MAX     30
+#define SETTEMP_MIN     10
 
 
 static int _send(int argc, char **argv)
@@ -229,26 +235,56 @@ static void _can_event_callback(candev_t *dev, candev_event_t event, void *arg)
 void updateLCD(void)
 {
     char lcd_buf[MAX_LCD_WIDTH] = { '\0' };
-    if(update_actTemp) {
-        sprintf(lcd_buf, "%d degC", actTemp);
+    if(update_setTemp) {
+        sprintf(lcd_buf, "%d C", setTemp);
         glcd_draw_text(1, 20, &proportional_font, lcd_buf);
         update_actTemp = 0;
-    } else if (update_setTemp) {
-        sprintf(lcd_buf, "%d degC", setTemp);
+    } else if (update_actTemp) {
+        sprintf(lcd_buf, "%d C", actTemp);
         glcd_draw_text(3, 20, &proportional_font, lcd_buf);
         update_setTemp = 0;
     }
     
 }
 
+static void read_encoder(void *arg)
+{
+    (void) arg;
+    int stat1 = 0;
+    int stat2 = 0;
+    static int stat1_prev = 1;
+
+
+    stat1 = gpio_read(ENC1);
+    stat2 = gpio_read(ENC2);
+
+    if(!stat1_prev  && stat1 ) {
+        if(!stat2 ) {
+            setTemp--;
+        } else {
+            setTemp++;
+        }
+        if(setTemp > SETTEMP_MAX) {
+            setTemp = SETTEMP_MAX;
+        } else if(setTemp < SETTEMP_MIN) {
+            setTemp = SETTEMP_MIN;
+        }
+        update_setTemp = 1;
+    }
+    stat1_prev = stat1;
+}
+
 int main(void)
 {
     uint8_t rx_ringbuf[RX_RINGBUFFER_SIZE] = { 0 };
+    int res = 0;
     (void) _can_event_callback;
 
+    //initialize glcd
     glcd_init();
     glcd_clear_display();
 
+    //initialize CAN
     isrpipe_init(&rxbuf, (uint8_t *)rx_ringbuf, sizeof(rx_ringbuf));
     candev_mcp2515_init(&mcp2515_dev, &mcp2515_conf);
     candev = (candev_t *)&mcp2515_dev;
@@ -260,10 +296,22 @@ int main(void)
 
     candev->driver->init(candev);
 
+    //initialize encoder
+    res = gpio_init_int(ENC1, GPIO_IN, GPIO_BOTH, read_encoder, NULL);
+    if(res) {
+        puts("Error setting irq");
+    }
+    res = gpio_init_int(ENC2, GPIO_IN, GPIO_BOTH, read_encoder, NULL);
+    if(res) {
+        puts("Error setting irq");
+    }
+
+
+    //Display initial screen
     glcd_draw_text_P(0, 0, &proportional_font, PSTR("Gewenste temperatuur: "));
-    glcd_draw_text_P(1, 20, &proportional_font, PSTR("0 degC"));
+    glcd_draw_text_P(1, 20, &proportional_font, PSTR("0 C"));
     glcd_draw_text_P(2, 0, &proportional_font, PSTR("Huidige temperatuur: "));
-    glcd_draw_text_P(3, 20, &proportional_font, PSTR("0 degC"));
+    glcd_draw_text_P(3, 20, &proportional_font, PSTR("0 C"));
 
     //char line_buf[SHELL_DEFAULT_BUFSIZE];
     //shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
