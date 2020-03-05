@@ -26,13 +26,18 @@
 #include "periph/adc.h"
 #include "periph_conf.h"
 
+#include "xtimer.h"
+
 #define ADC_MAX_CLK         (200000U)
 
-static mutex_t lock = MUTEX_INIT;
+#define MAX_SAMPLE_TIME (1000000U)
+
+//static mutex_t lock = MUTEX_INIT;
 
 static inline void _prep(void)
 {
-    mutex_lock(&lock);
+    //puts("trying to lock...");
+    //mutex_lock(&lock);
     /* Enable ADC */
     ADCSRA |= (1 << ADEN);
 }
@@ -41,7 +46,8 @@ static inline void _done(void)
 {
     /* Disable ADC */
     ADCSRA &= ~(1 << ADEN);
-    mutex_unlock(&lock);
+    //mutex_unlock(&lock);
+    //puts("unlocked...");
 }
 
 int adc_init(adc_t line)
@@ -131,9 +137,14 @@ int32_t adc_sample(adc_t line, adc_res_t res)
        be performed in single conversion mode. */
     ADCSRA |= (1 << ADSC);
 
+    xtimer_ticks64_t start = xtimer_now64();
     /* Wait until the conversion is complete */
-    while (ADCSRA & (1 << ADSC)) {}
-
+    while (ADCSRA & (1 << ADSC)) {
+        if(xtimer_diff64(xtimer_now64(), start).ticks64 > MAX_SAMPLE_TIME) {
+            _done();
+            return -1;
+        }
+    }
     /* Get conversion result */
     sample = ADC;
 

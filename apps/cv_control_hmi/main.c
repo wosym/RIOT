@@ -29,6 +29,8 @@
 #include <string.h>
 #include <isrpipe.h>
 #include <periph/gpio.h>
+#include <periph/adc.h>
+#include <math.h>
 //#include "shell.h"
 #include "can/device.h"
 
@@ -86,15 +88,23 @@ isrpipe_t rxbuf;
 
 static candev_t *candev = NULL;
 
-uint8_t setTemp = 0;
-uint8_t actTemp = 0;
-uint8_t update_actTemp = 0;
-uint8_t update_setTemp = 0;
+float setTemp = 10;
+float actTemp = 1;
+uint8_t pumpstatus = 0;     //0: idle, 1: heating, 2: overheat, 3: err
+uint8_t update_actTemp = 1;
+uint8_t update_setTemp = 1;
+uint8_t update_pumpStatus = 1;
 
 #define ENC1    GPIO_PIN(PORT_D, 7)
 #define ENC2    GPIO_PIN(PORT_D, 6)
 #define SETTEMP_MAX     30
 #define SETTEMP_MIN     10
+
+#define T_SENSOR    ADC_LINE(5)
+#define T_C1        0.001129148         //Steinhart-hart coefficients for thermistor
+#define T_C2        0.000234125
+#define T_C3        0.0000000876741
+#define T_R1        10000               //Resistor for voltage divider
 
 
 static int _send(int argc, char **argv)
@@ -111,7 +121,7 @@ static int _send(int argc, char **argv)
 
     if (argc > 1) {
         if (argc > 1 + CAN_MAX_DLEN) {
-            printf("Could not send. Maximum CAN-bytes: %d\n", CAN_MAX_DLEN);
+            printf_P(PSTR("Could not send. Maximum CAN-bytes: %d\n"), CAN_MAX_DLEN);
             return -1;
         }
         for (int i = 1; i < argc; i++) {
@@ -165,13 +175,6 @@ static int _receive(int argc, char **argv)
 
     return 0;
 }
-/*
-static const shell_command_t shell_commands[] = {
-    { "send", "send some data", _send },
-    { "receive", "receive some data", _receive },
-    { NULL, NULL, NULL }
-};
-*/
 
 static void _can_event_callback(candev_t *dev, candev_event_t event, void *arg)
 {
@@ -209,8 +212,12 @@ static void _can_event_callback(candev_t *dev, candev_event_t event, void *arg)
                 actTemp = frame->data[1];
                 update_actTemp= 1;
             } else if (frame->data[0] == 0x02) {    //update set temperature
+                puts("a");
                 setTemp = frame->data[1];
                 update_setTemp = 1;
+            } else if (frame->data[0] == 0x03) {    //update pump status
+                pumpstatus = frame->data[1];
+                update_pumpStatus = 1;
             }
 
             break;
@@ -236,13 +243,38 @@ void updateLCD(void)
 {
     char lcd_buf[MAX_LCD_WIDTH] = { '\0' };
     if(update_setTemp) {
-        sprintf(lcd_buf, "%d C", setTemp);
+        sprintf(lcd_buf, "%.1f C", setTemp);
         glcd_draw_text(1, 20, &proportional_font, lcd_buf);
-        update_actTemp = 0;
-    } else if (update_actTemp) {
-        sprintf(lcd_buf, "%d C", actTemp);
-        glcd_draw_text(3, 20, &proportional_font, lcd_buf);
+        xtimer_usleep(1000);
         update_setTemp = 0;
+    }
+    if (update_actTemp) {
+        sprintf(lcd_buf, "%.1f C", actTemp);
+        glcd_draw_text(3, 20, &proportional_font, lcd_buf);
+        xtimer_usleep(1000);
+        update_actTemp = 0;
+    }
+    if(update_pumpStatus) {
+        switch (pumpstatus) {
+            case 0:                 //TODO: These drawing calls make the program crash for some reason??
+                glcd_draw_text(5, 30, &proportional_font, "Idle              ");
+                break;
+            case 1:
+                glcd_draw_text(5, 30, &proportional_font, "Heating       ");
+                break;
+            case 2:
+                glcd_draw_text(5, 30, &proportional_font, "Overheat       ");
+                break;
+            case 3:
+                glcd_draw_text(5, 30, &proportional_font, "Error       ");
+                break;
+            default:
+                glcd_draw_text(5, 30, &proportional_font, "Error       ");
+                puts_P(PSTR("Error: unknown pumpstate"));
+                break;
+        }
+        xtimer_usleep(1000);
+        update_pumpStatus = 0;
     }
     
 }
@@ -260,9 +292,9 @@ static void read_encoder(void *arg)
 
     if(!stat1_prev  && stat1 ) {
         if(!stat2 ) {
-            setTemp--;
+            setTemp -= 0.5;
         } else {
-            setTemp++;
+            setTemp += 0.5;
         }
         if(setTemp > SETTEMP_MAX) {
             setTemp = SETTEMP_MAX;
@@ -274,11 +306,51 @@ static void read_encoder(void *arg)
     stat1_prev = stat1;
 }
 
-int main(void)
+static int read_temperature(void)
 {
+    int val = 0;
+    float R2 = 0;
+    float logR2 = 0;
+
+    val = adc_sample(T_SENSOR, ADC_RES_10BIT);
+    if(val == -1){
+        puts("Failed sample");
+        return -1;
+    }
+    R2 = T_R1 * (1023.0 / (float) val - 1.0);
+    logR2 = log(R2);
+    actTemp = (1.0 / (T_C1 + T_C2*logR2 + T_C3*logR2*logR2*logR2));
+    actTemp = actTemp - 273.15;
+
+    update_actTemp = 1;
+
+
+    return 0;
+
+}
+
+static int init_temperature_sensor(void) 
+{
+    int ret = adc_init(T_SENSOR);
+    if(ret) {
+        puts_P(PSTR("Error initializing temperature sensor"));
+    }
+
+    return ret;
+}
+
+int main(void)
+{   //TODO: return check
     uint8_t rx_ringbuf[RX_RINGBUFFER_SIZE] = { 0 };
     int res = 0;
     (void) _can_event_callback;
+
+    //initialize temperature sensor
+    if(init_temperature_sensor()) {
+        puts("Error: exiting!");
+        while(1);
+    }
+
 
     //initialize glcd
     glcd_init();
@@ -299,29 +371,27 @@ int main(void)
     //initialize encoder
     res = gpio_init_int(ENC1, GPIO_IN, GPIO_BOTH, read_encoder, NULL);
     if(res) {
-        puts("Error setting irq");
+        puts_P(PSTR("Error setting irq"));
     }
     res = gpio_init_int(ENC2, GPIO_IN, GPIO_BOTH, read_encoder, NULL);
     if(res) {
-        puts("Error setting irq");
+        puts_P(PSTR("Error setting irq"));
     }
 
 
     //Display initial screen
     glcd_draw_text_P(0, 0, &proportional_font, PSTR("Gewenste temperatuur: "));
-    glcd_draw_text_P(1, 20, &proportional_font, PSTR("0 C"));
     glcd_draw_text_P(2, 0, &proportional_font, PSTR("Huidige temperatuur: "));
-    glcd_draw_text_P(3, 20, &proportional_font, PSTR("0 C"));
-
-    //char line_buf[SHELL_DEFAULT_BUFSIZE];
-    //shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
+    glcd_draw_text_P(5, 0, &proportional_font, PSTR("Status: "));
 
     (void) _send;
     (void) _receive;
 
     while(1) {
         xtimer_usleep(100000);
-        if(update_actTemp || update_setTemp) {
+        read_temperature();
+
+        if(update_actTemp || update_setTemp || update_pumpStatus) {
             updateLCD();
         }
     }
