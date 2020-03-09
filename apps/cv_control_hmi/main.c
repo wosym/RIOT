@@ -106,7 +106,46 @@ uint8_t update_pumpStatus = 1;
 #define T_C3        0.0000000876741
 #define T_R1        10000               //Resistor for voltage divider
 
+#define REFRESHTIME     10000   //in us
+#define SENDTEMPINTERVAL    1000000 //in us
 
+#define MA_WIDTH    20
+
+union FloatByteUnion{
+    uint8_t bytes[4];
+    float floatNum;
+};
+/*
+ * Send update of set and actual temperatures over CAN to controller
+ */
+static int send_tempUpdate(void)
+{
+    int ret = 0;
+    struct can_frame frame = {
+        .can_id = 0x01,     //Abuse can_ID as data-identifier. 0x01 = temperature update
+        .can_dlc = 8,
+        .data[0] = (uint8_t)((((union FloatByteUnion)actTemp).bytes[0])),
+        .data[1] = (uint8_t)((((union FloatByteUnion)actTemp).bytes[1])),
+        .data[2] = (uint8_t)((((union FloatByteUnion)actTemp).bytes[2])),
+        .data[3] = (uint8_t)((((union FloatByteUnion)actTemp).bytes[3])),
+        .data[4] = (uint8_t)((((union FloatByteUnion)setTemp).bytes[0])),
+        .data[5] = (uint8_t)((((union FloatByteUnion)setTemp).bytes[1])),
+        .data[6] = (uint8_t)((((union FloatByteUnion)setTemp).bytes[2])),
+        .data[7] = (uint8_t)((((union FloatByteUnion)setTemp).bytes[3])),
+    };
+
+    ret = candev->driver->send(candev, &frame);
+    if (ret >= 0) {
+        DEBUG("sent using mailbox: %d\n", ret);
+        return -1;
+    }
+    else {
+        puts_P(PSTR("Failed to send CAN-message!"));
+    }
+
+    return 0;
+
+}
 static int _send(int argc, char **argv)
 {
     int ret = 0;
@@ -207,15 +246,8 @@ static void _can_event_callback(candev_t *dev, candev_event_t event, void *arg)
             }
             DEBUG(" ");
 
-            //TODO: turn into switch statement? Or remove all together, because we probably won't need this in the final product
-            if(frame->data[0] == 0x01) {    //Update actual temperature
-                actTemp = frame->data[1];
-                update_actTemp= 1;
-            } else if (frame->data[0] == 0x02) {    //update set temperature
-                puts("a");
-                setTemp = frame->data[1];
-                update_setTemp = 1;
-            } else if (frame->data[0] == 0x03) {    //update pump status
+            //TODO: also change this to CAN_ID instead of identifier byte?
+            if (frame->data[0] == 0x03) {    //update pump status
                 pumpstatus = frame->data[1];
                 update_pumpStatus = 1;
             }
@@ -239,6 +271,11 @@ static void _can_event_callback(candev_t *dev, candev_event_t event, void *arg)
     }
 }
 
+static float pseudo_MA(float avg, float val, int width)
+{
+    return avg + ((val - avg) / width);
+}
+
 void updateLCD(void)
 {
     char lcd_buf[MAX_LCD_WIDTH] = { '\0' };
@@ -256,7 +293,7 @@ void updateLCD(void)
     }
     if(update_pumpStatus) {
         switch (pumpstatus) {
-            case 0:                 //TODO: These drawing calls make the program crash for some reason??
+            case 0:
                 glcd_draw_text(5, 30, &proportional_font, "Idle              ");
                 break;
             case 1:
@@ -276,7 +313,6 @@ void updateLCD(void)
         xtimer_usleep(1000);
         update_pumpStatus = 0;
     }
-    
 }
 
 static void read_encoder(void *arg)
@@ -311,6 +347,7 @@ static int read_temperature(void)
     int val = 0;
     float R2 = 0;
     float logR2 = 0;
+    float temperature = 0;
 
     val = adc_sample(T_SENSOR, ADC_RES_10BIT);
     if(val == -1){
@@ -319,8 +356,10 @@ static int read_temperature(void)
     }
     R2 = T_R1 * (1023.0 / (float) val - 1.0);
     logR2 = log(R2);
-    actTemp = (1.0 / (T_C1 + T_C2*logR2 + T_C3*logR2*logR2*logR2));
-    actTemp = actTemp - 273.15;
+    temperature = (1.0 / (T_C1 + T_C2*logR2 + T_C3*logR2*logR2*logR2));
+    temperature = temperature - 273.15;
+
+    actTemp = pseudo_MA(actTemp, temperature, MA_WIDTH); 
 
     update_actTemp = 1;
 
@@ -340,17 +379,17 @@ static int init_temperature_sensor(void)
 }
 
 int main(void)
-{   //TODO: return check
+{
     uint8_t rx_ringbuf[RX_RINGBUFFER_SIZE] = { 0 };
     int res = 0;
     (void) _can_event_callback;
+    int prescaler = 0;
 
     //initialize temperature sensor
     if(init_temperature_sensor()) {
         puts("Error: exiting!");
         while(1);
     }
-
 
     //initialize glcd
     glcd_init();
@@ -388,12 +427,19 @@ int main(void)
     (void) _receive;
 
     while(1) {
-        xtimer_usleep(100000);
+        xtimer_usleep(REFRESHTIME);
         read_temperature();
-
         if(update_actTemp || update_setTemp || update_pumpStatus) {
             updateLCD();
         }
+
+        if(prescaler >= SENDTEMPINTERVAL / REFRESHTIME)
+        {
+            send_tempUpdate();
+            prescaler = 0;
+        }
+        prescaler++;
+
     }
     return 0;
 }
