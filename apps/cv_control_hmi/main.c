@@ -247,8 +247,8 @@ static void _can_event_callback(candev_t *dev, candev_event_t event, void *arg)
             DEBUG(" ");
 
             //TODO: also change this to CAN_ID instead of identifier byte?
-            if (frame->data[0] == 0x03) {    //update pump status
-                pumpstatus = frame->data[1];
+            if (frame->can_id == 0x02) {    //update pump status
+                pumpstatus = frame->data[0];
                 update_pumpStatus = 1;
             }
 
