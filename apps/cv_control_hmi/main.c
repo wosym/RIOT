@@ -101,9 +101,9 @@ uint8_t update_pumpStatus = 1;
 #define SETTEMP_MIN     10
 
 #define T_SENSOR    ADC_LINE(5)
-#define T_C1        0.001129148         //Steinhart-hart coefficients for thermistor
-#define T_C2        0.000234125
-#define T_C3        0.0000000876741
+#define T_C1        0.001281922220      //Steinhart-hart coefficients for thermistor
+#define T_C2        0.0001984893927
+#define T_C3        0.0000001838448051
 #define T_R1        10000               //Resistor for voltage divider
 
 #define REFRESHTIME     10000   //in us
