@@ -48,6 +48,8 @@
 #define CANDEV_MCP2515_DEFAULT_SPT 875
 #endif
 
+mutex_t mcp_mutex;
+
 static int _init(candev_t *candev);
 static int _send(candev_t *candev, const struct can_frame *frame);
 static void _isr(candev_t *candev);
@@ -129,6 +131,8 @@ static int _init(candev_t *candev)
 
     memset(dev->tx_mailbox, 0, sizeof(dev->tx_mailbox));
 
+    mutex_init(&mcp_mutex);
+
     mcp2515_init(dev, _mcp2515_irq_handler);
     mcp2515_reset(dev);
     mcp2515_set_mode(dev, MODE_CONFIG);
@@ -153,7 +157,9 @@ static int _send(candev_t *candev, const struct can_frame *frame)
     int box;
     enum mcp2515_mode mode;
 
+    mutex_lock(&mcp_mutex);
     mode = mcp2515_get_mode(dev);
+    mutex_unlock(&mcp_mutex);
     if (mode != MODE_NORMAL && mode != MODE_LOOPBACK) {
         return -EINVAL;
     }
@@ -172,7 +178,9 @@ static int _send(candev_t *candev, const struct can_frame *frame)
 
     dev->tx_mailbox[box] = frame;
 
+    mutex_lock(&mcp_mutex);
     mcp2515_send(dev, frame, box);
+    mutex_unlock(&mcp_mutex);
 
     return box;
 }
@@ -194,7 +202,9 @@ static int _abort(candev_t *candev, const struct can_frame *frame)
         return -EBUSY;
     }
 
+    mutex_/ock(&mcp_mutex);
     mcp2515_abort(dev, box);
+    mutex_unlock(&mcp_mutex);
     dev->tx_mailbox[box] = NULL;
 
     return 0;
@@ -237,7 +247,9 @@ static void _isr(candev_t *candev)
         }
 
         /* clear all flags except for RX flags, which are cleared by receiving */
+        mutex_lock(&mcp_mutex);
         mcp2515_clear_irq(dev, flag & ~INT_RX0 & ~INT_RX1);
+        mutex_unlock(&mcp_mutex);
     }
 }
 
@@ -496,7 +508,9 @@ static void _irq_rx(candev_mcp2515_t *dev, int box)
 {
     DEBUG("Inside mcp2515 rx irq, box=%d\n", box);
 
+    mutex_lock(&mcp_mutex);
     mcp2515_receive(dev, &dev->rx_buf[box], box);
+    mutex_unlock(&mcp_mutex);
 
     _send_event(dev, CANDEV_EVENT_RX_INDICATION, &dev->rx_buf[box]);
 }
