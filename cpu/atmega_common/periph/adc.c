@@ -141,6 +141,7 @@ int32_t adc_sample(adc_t line, adc_res_t res)
     /* Wait until the conversion is complete */
     while (ADCSRA & (1 << ADSC)) {
         if(xtimer_diff64(xtimer_now64(), start).ticks64 > MAX_SAMPLE_TIME) {
+            ADCSRA |= (1 << ADIF);
             _done();
             return -1;
         }
