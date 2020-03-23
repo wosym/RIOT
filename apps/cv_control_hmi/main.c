@@ -27,8 +27,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <irq.h>
-#include <isrpipe.h>
 #include <periph/gpio.h>
 #include <periph/adc.h>
 #include <math.h>
@@ -84,9 +82,6 @@ candev_mcp2515_conf_t mcp2515_conf = {
 
 candev_mcp2515_t mcp2515_dev = { 0 };
 
-#define RX_RINGBUFFER_SIZE 128      //Needs to be a power of 2!
-isrpipe_t rxbuf;
-
 static candev_t *candev = NULL;
 
 float setTemp = 10;
@@ -138,79 +133,10 @@ static int send_tempUpdate(void)
     ret = candev->driver->send(candev, &frame);
     if (ret >= 0) {
         DEBUG("sent using mailbox: %d\n", ret);
+    }
+    else {
+        puts_P(PSTR("Failed to send CAN-message!"));
         return -1;
-    }
-    else {
-        puts_P(PSTR("Failed to send CAN-message!"));
-    }
-
-    return 0;
-
-}
-static int _send(int argc, char **argv)
-{
-    int ret = 0;
-
-    struct can_frame frame = {
-        .can_id = 1,
-        .can_dlc = 3,
-        .data[0] = 0xAB,
-        .data[1] = 0xCD,
-        .data[2] = 0xEF,
-    };
-
-    if (argc > 1) {
-        if (argc > 1 + CAN_MAX_DLEN) {
-            printf_P(PSTR("Could not send. Maximum CAN-bytes: %d\n"), CAN_MAX_DLEN);
-            return -1;
-        }
-        for (int i = 1; i < argc; i++) {
-            frame.data[i - 1] = atoi(argv[i]);
-        }
-        frame.can_dlc = argc - 1;
-    }
-
-    ret = candev->driver->send(candev, &frame);
-    if (ret >= 0) {
-        DEBUG("sent using mailbox: %d\n", ret);
-    }
-    else {
-        puts_P(PSTR("Failed to send CAN-message!"));
-    }
-
-    return 0;
-}
-
-static int _receive(int argc, char **argv)
-{
-    uint8_t buf[CAN_MAX_DLEN];
-    uint32_t can_id = 0;
-    uint8_t can_dlc = 0;
-    int n = 1;
-    char *pEnd;
-
-    if (argc > 1) {
-        n = strtol(argv[1], &pEnd, 10);
-        if (n < 1) {
-            puts_P(PSTR("Usage: receive <number>"));
-            return -1;
-        }
-    }
-
-    for (int i = 0; i < n; i++) {
-
-        puts_P(PSTR("Reading from Rxbuf..."));
-        isrpipe_read(&rxbuf, buf, 4);       //id
-        can_id = (buf[0] << 6) | (buf[1] << 4) | (buf[2] << 2) | (buf[3]);
-        isrpipe_read(&rxbuf, buf, 1);       //dlc
-        can_dlc = buf[0];
-        isrpipe_read(&rxbuf, buf, can_dlc); //data
-
-        printf("id: %" PRIx32 " dlc: %" PRIx8 " Data: \n", can_id, can_dlc);
-        for (int i = 0; i < can_dlc; i++) {
-            printf("0x%X ", buf[i]);
-        }
-        puts("");
     }
 
     return 0;
@@ -350,9 +276,7 @@ static int read_temperature(void)
     float logR2 = 0;
     float temperature = 0;
 
-    irq_disable();      //TODO: investigate: is this a bug with ADC? Or with the mcp driver?
     val = adc_sample(T_SENSOR, ADC_RES_10BIT);
-    irq_enable();
     if(val == -1){
         puts("Failed sample");
         return -1;
@@ -383,7 +307,6 @@ static int init_temperature_sensor(void)
 
 int main(void)
 {
-    uint8_t rx_ringbuf[RX_RINGBUFFER_SIZE] = { 0 };
     int res = 0;
     (void) _can_event_callback;
     int prescaler = 0;
@@ -399,7 +322,6 @@ int main(void)
     glcd_clear_display();
 
     //initialize CAN
-    isrpipe_init(&rxbuf, (uint8_t *)rx_ringbuf, sizeof(rx_ringbuf));
     candev_mcp2515_init(&mcp2515_dev, &mcp2515_conf);
     candev = (candev_t *)&mcp2515_dev;
 
@@ -425,9 +347,6 @@ int main(void)
     glcd_draw_text_P(0, 0, &proportional_font, PSTR("Gewenste temperatuur: "));
     glcd_draw_text_P(2, 0, &proportional_font, PSTR("Huidige temperatuur: "));
     glcd_draw_text_P(5, 0, &proportional_font, PSTR("Status: "));
-
-    (void) _send;
-    (void) _receive;
 
     while(1) {
         xtimer_usleep(REFRESHTIME);
