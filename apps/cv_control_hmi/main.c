@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <irq.h>
 #include <isrpipe.h>
 #include <periph/gpio.h>
 #include <periph/adc.h>
@@ -349,7 +350,9 @@ static int read_temperature(void)
     float logR2 = 0;
     float temperature = 0;
 
+    irq_disable();      //TODO: investigate: is this a bug with ADC? Or with the mcp driver?
     val = adc_sample(T_SENSOR, ADC_RES_10BIT);
+    irq_enable();
     if(val == -1){
         puts("Failed sample");
         return -1;
