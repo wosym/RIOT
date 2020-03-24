@@ -32,6 +32,8 @@
 #include "sched.h"
 #include "mutex.h"
 
+#include <avr/pgmspace.h>
+
 #define ENABLE_DEBUG (0)
 #include "debug.h"
 
@@ -157,14 +159,14 @@ static int _send(candev_t *candev, const struct can_frame *frame)
     int box;
     enum mcp2515_mode mode;
 
-    mutex_lock(&mcp_mutex);
+    //mutex_lock(&mcp_mutex);
     mode = mcp2515_get_mode(dev);
-    mutex_unlock(&mcp_mutex);
+    //mutex_unlock(&mcp_mutex);
     if (mode != MODE_NORMAL && mode != MODE_LOOPBACK) {
         return -EINVAL;
     }
 
-    DEBUG("Inside mcp2515 send\n");
+    puts_P(PSTR("Inside mcp2515 send\n"));
 
     for (box = 0; box < MCP2515_TX_MAILBOXES; box++) {
         if (dev->tx_mailbox[box] == NULL) {
@@ -178,9 +180,11 @@ static int _send(candev_t *candev, const struct can_frame *frame)
 
     dev->tx_mailbox[box] = frame;
 
-    mutex_lock(&mcp_mutex);
+    //mutex_lock(&mcp_mutex);
+    irq_disable();  //don't allow interrupts while sending stuff over SPI
     mcp2515_send(dev, frame, box);
-    mutex_unlock(&mcp_mutex);
+    irq_enable();
+    //mutex_unlock(&mcp_mutex);
 
     return box;
 }
@@ -190,7 +194,7 @@ static int _abort(candev_t *candev, const struct can_frame *frame)
     candev_mcp2515_t *dev = (candev_mcp2515_t *)candev;
     int box;
 
-    DEBUG("Inside mcp2515 abort\n");
+    puts_P(PSTR("Inside mcp2515 abort\n"));
 
     for (box = 0; box < MCP2515_TX_MAILBOXES; box++) {
         if (dev->tx_mailbox[box] == frame) {
@@ -202,9 +206,9 @@ static int _abort(candev_t *candev, const struct can_frame *frame)
         return -EBUSY;
     }
 
-    mutex_/ock(&mcp_mutex);
+    //mutex_lock(&mcp_mutex);
     mcp2515_abort(dev, box);
-    mutex_unlock(&mcp_mutex);
+    //mutex_unlock(&mcp_mutex);
     dev->tx_mailbox[box] = NULL;
 
     return 0;
@@ -247,9 +251,9 @@ static void _isr(candev_t *candev)
         }
 
         /* clear all flags except for RX flags, which are cleared by receiving */
-        mutex_lock(&mcp_mutex);
+        //mutex_lock(&mcp_mutex);
         mcp2515_clear_irq(dev, flag & ~INT_RX0 & ~INT_RX1);
-        mutex_unlock(&mcp_mutex);
+        //mutex_unlock(&mcp_mutex);
     }
 }
 
@@ -258,7 +262,7 @@ static int _set(candev_t *candev, canopt_t opt, void *value, size_t value_len)
     candev_mcp2515_t *dev = (candev_mcp2515_t *)candev;
     int res = 0;
 
-    DEBUG("Inside mcp2515 set opt=%d\n", opt);
+    printf_P(PSTR("Inside mcp2515 set opt=%d\n"), opt);
     switch (opt) {
         case CANOPT_BITTIMING:   /**< bit timing parameter */
             if (value_len < sizeof(candev->bittiming)) {
@@ -307,7 +311,7 @@ static int _get(candev_t *candev, canopt_t opt, void *value, size_t max_len)
     candev_mcp2515_t *dev = (candev_mcp2515_t *)candev;
     int res = 0;
 
-    DEBUG("Inside mcp2515 get opt=%d\n", opt);
+    printf_P(PSTR("Inside mcp2515 get opt=%d\n"), opt);
     switch (opt) {
         case CANOPT_BITTIMING:
             if (max_len < sizeof(candev->bittiming)) {
@@ -354,7 +358,7 @@ static int _get(candev_t *candev, canopt_t opt, void *value, size_t max_len)
 
 static int _set_filter(candev_t *dev, const struct can_filter *filter)
 {
-    DEBUG("inside _set_filter of MCP2515\n");
+    puts_P(PSTR("inside _set_filter of MCP2515\n"));
     int filter_added = -1;
     struct can_filter f = *filter;
     int res = -1;
@@ -432,7 +436,7 @@ static int _set_filter(candev_t *dev, const struct can_filter *filter)
 
 static int _remove_filter(candev_t *dev, const struct can_filter *filter)
 {
-    DEBUG("inside _remove_filter of MCP2515\n");
+    puts_P(PSTR("inside _remove_filter of MCP2515\n"));
     int filter_removed = -1;
     struct can_filter f = *filter;
     int res = 0;
@@ -506,18 +510,18 @@ static int _remove_filter(candev_t *dev, const struct can_filter *filter)
 
 static void _irq_rx(candev_mcp2515_t *dev, int box)
 {
-    DEBUG("Inside mcp2515 rx irq, box=%d\n", box);
+    printf_P(PSTR("Inside mcp2515 rx irq, box=%d\n"), box);
 
-    mutex_lock(&mcp_mutex);
+    //mutex_lock(&mcp_mutex);
     mcp2515_receive(dev, &dev->rx_buf[box], box);
-    mutex_unlock(&mcp_mutex);
+    //mutex_unlock(&mcp_mutex);
 
     _send_event(dev, CANDEV_EVENT_RX_INDICATION, &dev->rx_buf[box]);
 }
 
 static void _irq_tx(candev_mcp2515_t *dev, int box)
 {
-    DEBUG("Inside mcp2515 tx irq\n");
+    puts_P(PSTR("Inside mcp2515 tx irq\n"));
     const struct can_frame *frame = dev->tx_mailbox[box];
     dev->tx_mailbox[box] = NULL;
 
@@ -528,31 +532,35 @@ static void _irq_error(candev_mcp2515_t *dev)
 {
     uint8_t err;
 
-    DEBUG("Inside mcp2515 error irq\n");
+    puts_P(PSTR("Inside mcp2515 error irq\n"));
 
     err = mcp2515_get_errors(dev);
 
     if (err & (ERR_WARNING | ERR_RX_WARNING | ERR_TX_WARNING)) {
-        DEBUG("Error Warning\n");
+        puts_P(PSTR("Error Warning\n"));
         _send_event(dev, CANDEV_EVENT_ERROR_WARNING, NULL);
     }
     else if (err & (ERR_RX_PASSIVE | ERR_TX_PASSIVE)) {
-        DEBUG("Error Passive\n");
+        puts_P(PSTR("Error Passive\n"));
         _send_event(dev, CANDEV_EVENT_ERROR_PASSIVE, NULL);
     }
     else if (err & ERR_TX_BUS_OFF) {
-        DEBUG("Buss Off\n");
+        puts_P(PSTR("Buss Off\n"));
         _send_event(dev, CANDEV_EVENT_BUS_OFF, NULL);
     }
     else if (err & (ERR_RX_0_OVERFLOW | ERR_RX_1_OVERFLOW)) {
-        DEBUG("RX overflow\n");
+        puts_P(PSTR("RX overflow\n"));
         _send_event(dev, CANDEV_EVENT_RX_ERROR, NULL);
+    }
+    else {
+        printf_P(PSTR("Uncaught error?? - %d\n"), err);
     }
 }
 
 static void _irq_message_error(candev_mcp2515_t *dev)
 {
     (void)dev;
+    puts_P(PSTR("IRQ_MESSAGE_ERROR!!!!!"));
 #if (0)
     int box;
 
@@ -562,17 +570,17 @@ static void _irq_message_error(candev_mcp2515_t *dev)
         if (mcp2515_tx_err_occurred(dev, box)) {
             DEBUG("Box: %d\n", box);
 
-            mutex_lock(&dev->tx_mutex);
+            //mutex_lock(&dev->tx_mutex);
             mcp2515_abort(dev, box);
             xtimer_remove(&dev->tx_mailbox[box].timer);
-            mutex_unlock(&dev->tx_mutex);
+            //mutex_unlock(&dev->tx_mutex);
 
             _send_event(dev, CANDEV_EVENT_TIMEOUT_TX_CONF,
                         (void *)dev->tx_mailbox[box].pkt);
 
-            mutex_lock(&dev->tx_mutex);
+            //mutex_lock(&dev->tx_mutex);
             dev->tx_mailbox[box].pkt = NULL;
-            mutex_unlock(&dev->tx_mutex);
+            //mutex_unlock(&dev->tx_mutex);
         }
     }
 #endif
@@ -580,7 +588,7 @@ static void _irq_message_error(candev_mcp2515_t *dev)
 
 static void _irq_wakeup(const candev_mcp2515_t *dev)
 {
-    DEBUG("Inside mcp2515 wakeup irq\n");
+    puts_P(PSTR("Inside mcp2515 wakeup irq\n"));
 
     _send_event(dev, CANDEV_EVENT_WAKE_UP, NULL);
 }
