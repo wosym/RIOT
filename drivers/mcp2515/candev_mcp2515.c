@@ -166,7 +166,7 @@ static int _send(candev_t *candev, const struct can_frame *frame)
         return -EINVAL;
     }
 
-    puts_P(PSTR("Inside mcp2515 send\n"));
+    DEBUG("Inside mcp2515 send\n");
 
     for (box = 0; box < MCP2515_TX_MAILBOXES; box++) {
         if (dev->tx_mailbox[box] == NULL) {
@@ -194,7 +194,7 @@ static int _abort(candev_t *candev, const struct can_frame *frame)
     candev_mcp2515_t *dev = (candev_mcp2515_t *)candev;
     int box;
 
-    puts_P(PSTR("Inside mcp2515 abort\n"));
+    DEBUG("Inside mcp2515 abort\n");
 
     for (box = 0; box < MCP2515_TX_MAILBOXES; box++) {
         if (dev->tx_mailbox[box] == frame) {
@@ -262,7 +262,7 @@ static int _set(candev_t *candev, canopt_t opt, void *value, size_t value_len)
     candev_mcp2515_t *dev = (candev_mcp2515_t *)candev;
     int res = 0;
 
-    printf_P(PSTR("Inside mcp2515 set opt=%d\n"), opt);
+    DEBUG("Inside mcp2515 set opt=%d\n", opt);
     switch (opt) {
         case CANOPT_BITTIMING:   /**< bit timing parameter */
             if (value_len < sizeof(candev->bittiming)) {
@@ -311,7 +311,7 @@ static int _get(candev_t *candev, canopt_t opt, void *value, size_t max_len)
     candev_mcp2515_t *dev = (candev_mcp2515_t *)candev;
     int res = 0;
 
-    printf_P(PSTR("Inside mcp2515 get opt=%d\n"), opt);
+    DEBUG("Inside mcp2515 get opt=%d\n", opt);
     switch (opt) {
         case CANOPT_BITTIMING:
             if (max_len < sizeof(candev->bittiming)) {
@@ -358,7 +358,7 @@ static int _get(candev_t *candev, canopt_t opt, void *value, size_t max_len)
 
 static int _set_filter(candev_t *dev, const struct can_filter *filter)
 {
-    puts_P(PSTR("inside _set_filter of MCP2515\n"));
+    DEBUG("inside _set_filter of MCP2515\n");
     int filter_added = -1;
     struct can_filter f = *filter;
     int res = -1;
@@ -436,7 +436,7 @@ static int _set_filter(candev_t *dev, const struct can_filter *filter)
 
 static int _remove_filter(candev_t *dev, const struct can_filter *filter)
 {
-    puts_P(PSTR("inside _remove_filter of MCP2515\n"));
+    DEBUG("inside _remove_filter of MCP2515\n");
     int filter_removed = -1;
     struct can_filter f = *filter;
     int res = 0;
@@ -510,7 +510,7 @@ static int _remove_filter(candev_t *dev, const struct can_filter *filter)
 
 static void _irq_rx(candev_mcp2515_t *dev, int box)
 {
-    printf_P(PSTR("Inside mcp2515 rx irq, box=%d\n"), box);
+    DEBUG("Inside mcp2515 rx irq, box=%d\n", box);
 
     //mutex_lock(&mcp_mutex);
     mcp2515_receive(dev, &dev->rx_buf[box], box);
@@ -521,7 +521,7 @@ static void _irq_rx(candev_mcp2515_t *dev, int box)
 
 static void _irq_tx(candev_mcp2515_t *dev, int box)
 {
-    puts_P(PSTR("Inside mcp2515 tx irq\n"));
+    DEBUG("Inside mcp2515 tx irq\n");
     const struct can_frame *frame = dev->tx_mailbox[box];
     dev->tx_mailbox[box] = NULL;
 
@@ -532,35 +532,35 @@ static void _irq_error(candev_mcp2515_t *dev)
 {
     uint8_t err;
 
-    puts_P(PSTR("Inside mcp2515 error irq\n"));
+    DEBUG("Inside mcp2515 error irq\n");
 
     err = mcp2515_get_errors(dev);
 
     if (err & (ERR_WARNING | ERR_RX_WARNING | ERR_TX_WARNING)) {
-        puts_P(PSTR("Error Warning\n"));
+        DEBUG("Error Warning\n");
         _send_event(dev, CANDEV_EVENT_ERROR_WARNING, NULL);
     }
     else if (err & (ERR_RX_PASSIVE | ERR_TX_PASSIVE)) {
-        puts_P(PSTR("Error Passive\n"));
+        DEBUG("Error Passive\n");
         _send_event(dev, CANDEV_EVENT_ERROR_PASSIVE, NULL);
     }
     else if (err & ERR_TX_BUS_OFF) {
-        puts_P(PSTR("Buss Off\n"));
+        DEBUG("Buss Off\n");
         _send_event(dev, CANDEV_EVENT_BUS_OFF, NULL);
     }
     else if (err & (ERR_RX_0_OVERFLOW | ERR_RX_1_OVERFLOW)) {
-        puts_P(PSTR("RX overflow\n"));
+        DEBUG("RX overflow\n");
         _send_event(dev, CANDEV_EVENT_RX_ERROR, NULL);
     }
     else {
-        printf_P(PSTR("Uncaught error?? - %d\n"), err);
+        DEBUG("Uncaught error?? - %d\n", err);
     }
 }
 
 static void _irq_message_error(candev_mcp2515_t *dev)
 {
     (void)dev;
-    puts_P(PSTR("IRQ_MESSAGE_ERROR!!!!!"));
+    DEBUG("IRQ_MESSAGE_ERROR!!!!!");
 #if (0)
     int box;
 
@@ -588,7 +588,7 @@ static void _irq_message_error(candev_mcp2515_t *dev)
 
 static void _irq_wakeup(const candev_mcp2515_t *dev)
 {
-    puts_P(PSTR("Inside mcp2515 wakeup irq\n"));
+    DEBUG("Inside mcp2515 wakeup irq\n");
 
     _send_event(dev, CANDEV_EVENT_WAKE_UP, NULL);
 }
