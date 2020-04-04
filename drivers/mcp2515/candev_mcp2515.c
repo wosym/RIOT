@@ -184,6 +184,7 @@ static int _send(candev_t *candev, const struct can_frame *frame)
     irq_disable();  //don't allow interrupts while sending stuff over SPI
     mcp2515_send(dev, frame, box);
     irq_enable();
+    _isr(candev);   //Do extra _isr, in case we missed an interrupt while we disabled them.     //Not sure if this is the right solution.
     //mutex_unlock(&mcp_mutex);
 
     return box;
