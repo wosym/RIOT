@@ -31,6 +31,7 @@
 #include "thread.h"
 #include "sched.h"
 #include "mutex.h"
+#include "xtimer.h"
 
 #include <avr/pgmspace.h>
 
@@ -51,6 +52,7 @@
 #endif
 
 mutex_t mcp_mutex;
+static int neednewisr = 0;
 
 static int _init(candev_t *candev);
 static int _send(candev_t *candev, const struct can_frame *frame);
@@ -141,15 +143,22 @@ static int _init(candev_t *candev)
     mcp2515_configure_bittiming(dev);
     mcp2515_init_irqs(dev);
 
-    /* configure filters to be closed */
-    for (int mailbox = 0; mailbox < MCP2515_RX_MAILBOXES; mailbox++) {
-        mcp2515_set_mask(dev, mailbox, dev->masks[mailbox]);
-        for (int filter = 0; filter < _max_filters(mailbox); filter++) {
-            mcp2515_set_filter(dev, mailbox * MCP2515_FILTERS_MB0 + filter,
-                               dev->filter_ids[mailbox][filter]);
+    if(mutex_trylock(&mcp_mutex)) {
+        /* configure filters to be closed */
+        for (int mailbox = 0; mailbox < MCP2515_RX_MAILBOXES; mailbox++) {
+            mcp2515_set_mask(dev, mailbox, dev->masks[mailbox]);
+            for (int filter = 0; filter < _max_filters(mailbox); filter++) {
+                mcp2515_set_filter(dev, mailbox * MCP2515_FILTERS_MB0 + filter,
+                                   dev->filter_ids[mailbox][filter]);
+            }
         }
+        res = mcp2515_set_mode(dev, MODE_NORMAL);
+        mutex_unlock(&mcp_mutex);
+    } else {
+        //locking failed
+        puts_P(PSTR("failed to lock mutex_init"));
+        return -1;
     }
-    res = mcp2515_set_mode(dev, MODE_NORMAL);
     return res;
 }
 
@@ -159,9 +168,13 @@ static int _send(candev_t *candev, const struct can_frame *frame)
     int box;
     enum mcp2515_mode mode;
 
-    //mutex_lock(&mcp_mutex);
-    mode = mcp2515_get_mode(dev);
-    //mutex_unlock(&mcp_mutex);
+    if(mutex_trylock(&mcp_mutex)) {
+        mode = mcp2515_get_mode(dev);
+        mutex_unlock(&mcp_mutex);
+    } else {
+        puts_P(PSTR("failed to lock mutex_send"));
+        return -1;
+    }
     if (mode != MODE_NORMAL && mode != MODE_LOOPBACK) {
         return -EINVAL;
     }
@@ -180,12 +193,19 @@ static int _send(candev_t *candev, const struct can_frame *frame)
 
     dev->tx_mailbox[box] = frame;
 
-    //mutex_lock(&mcp_mutex);
-    irq_disable();  //don't allow interrupts while sending stuff over SPI
-    mcp2515_send(dev, frame, box);
-    irq_enable();
-    _isr(candev);   //Do extra _isr, in case we missed an interrupt while we disabled them.     //Not sure if this is the right solution.
-    //mutex_unlock(&mcp_mutex);
+    if(mutex_trylock(&mcp_mutex)) {
+        mcp2515_send(dev, frame, box);
+        mutex_unlock(&mcp_mutex);
+    } else {
+        puts_P(PSTR("send2_failed to lock mutex"));
+        return -1;
+    }
+
+    if(neednewisr){
+        puts_P(PSTR("Calling _isr() again on request"));
+        _isr(candev);
+        neednewisr = 0;
+    }
 
     return box;
 }
@@ -207,9 +227,13 @@ static int _abort(candev_t *candev, const struct can_frame *frame)
         return -EBUSY;
     }
 
-    //mutex_lock(&mcp_mutex);
-    mcp2515_abort(dev, box);
-    //mutex_unlock(&mcp_mutex);
+    if(mutex_trylock(&mcp_mutex)) {
+        mcp2515_abort(dev, box);
+        mutex_unlock(&mcp_mutex);
+    } else {
+        puts_P(PSTR("abort_Failed to lock mutex"));
+        return -1;
+    }
     dev->tx_mailbox[box] = NULL;
 
     return 0;
@@ -220,7 +244,16 @@ static void _isr(candev_t *candev)
     uint8_t flag;
     candev_mcp2515_t *dev = (candev_mcp2515_t *)candev;
 
-    while ((flag = mcp2515_get_irq(dev))) {
+    if(mutex_trylock(&mcp_mutex)) {
+        flag = mcp2515_get_irq(dev);
+        mutex_unlock(&mcp_mutex);
+    } else {
+        puts_P(PSTR("isr: Failed to lock mutex"));
+        neednewisr = 1;
+        return;
+    }
+
+    while ((flag)) {
         if (flag & INT_WAKEUP) {
             if (dev->wakeup_src == MCP2515_WKUP_SRC_INTERNAL) {
                 dev->wakeup_src = 0;
@@ -251,10 +284,24 @@ static void _isr(candev_t *candev)
             _irq_message_error(dev);
         }
 
+        if(mutex_trylock(&mcp_mutex)) {
+            flag = mcp2515_get_irq(dev);
+            mutex_unlock(&mcp_mutex);
+        } else {
+            puts_P(PSTR("isr2: Failed to lock mutex"));
+            neednewisr = 1;
+            return;
+        }
+
         /* clear all flags except for RX flags, which are cleared by receiving */
-        //mutex_lock(&mcp_mutex);
-        mcp2515_clear_irq(dev, flag & ~INT_RX0 & ~INT_RX1);
-        //mutex_unlock(&mcp_mutex);
+        if(mutex_trylock(&mcp_mutex)) {
+            mcp2515_clear_irq(dev, flag & ~INT_RX0 & ~INT_RX1);
+            mutex_unlock(&mcp_mutex);
+        } else {
+            puts_P(PSTR("isr3: failed to lock mutex"));
+            neednewisr = 1;
+            return;
+        }
     }
 }
 
@@ -285,14 +332,32 @@ static int _set(candev_t *candev, canopt_t opt, void *value, size_t value_len)
             else {
                 switch (*((canopt_state_t *)value)) {
                     case CANOPT_STATE_LISTEN_ONLY:
-                        res = mcp2515_set_mode(dev, MODE_LISTEN_ONLY);
+                        if(mutex_trylock(&mcp_mutex)) {
+                            res = mcp2515_set_mode(dev, MODE_LISTEN_ONLY);
+                            mutex_unlock(&mcp_mutex);
+                        } else {
+                            puts_P(PSTR("set1_Failed to lock mutex"));
+                            return -1;
+                        }
                         break;
                     case CANOPT_STATE_OFF:
                     case CANOPT_STATE_SLEEP:
-                        res = mcp2515_set_mode(dev, MODE_SLEEP);
+                        if(mutex_trylock(&mcp_mutex)) {
+                            res = mcp2515_set_mode(dev, MODE_SLEEP);
+                            mutex_unlock(&mcp_mutex);
+                        } else {
+                            puts_P(PSTR("set2_Failed to lock mutex"));
+                            return -1;
+                        }
                         break;
                     case CANOPT_STATE_ON:
-                        res = mcp2515_set_mode(dev, MODE_NORMAL);
+                        if(mutex_trylock(&mcp_mutex)) {
+                            res = mcp2515_set_mode(dev, MODE_NORMAL);
+                            mutex_unlock(&mcp_mutex);
+                        } else {
+                            puts_P(PSTR("set3_Failed to lock mutex"));
+                            return -1;
+                        }
                         break;
                     default:
                         res = -ENOTSUP;
@@ -371,8 +436,16 @@ static int _set_filter(candev_t *dev, const struct can_filter *filter)
         return -EINVAL; /* invalid mask */
     }
 
-    mode = mcp2515_get_mode(dev_mcp);
-    res = mcp2515_set_mode(dev_mcp, MODE_CONFIG);
+    if(mutex_trylock(&mcp_mutex)) {
+        mode = mcp2515_get_mode(dev_mcp);
+        res = mcp2515_set_mode(dev_mcp, MODE_CONFIG);
+
+        mutex_unlock(&mcp_mutex);
+    } else {
+        puts_P(PSTR("setfilt_Failed to lock mutex"));
+        return -1;
+    }
+
     if (res != MODE_CONFIG) {
         return -1;
     }
@@ -416,9 +489,15 @@ static int _set_filter(candev_t *dev, const struct can_filter *filter)
             /* an empty space is found */
             if (filter_pos < _max_filters(mailbox_index)) {
                 /* set filter on this memory space */
-                mcp2515_set_filter(dev_mcp,
-                                   MCP2515_FILTERS_MB0 * mailbox_index + filter_pos,
-                                   f.can_id);
+                if(mutex_trylock(&mcp_mutex)) {
+                    mcp2515_set_filter(dev_mcp,
+                                       MCP2515_FILTERS_MB0 * mailbox_index + filter_pos,
+                                       f.can_id);
+                    mutex_unlock(&mcp_mutex);
+                } else {
+                    puts_P(PSTR("setfilt2_Failed to lock mutex"));
+                    return -1;
+                }
 
                 /* save filter */
                 dev_mcp->filter_ids[mailbox_index][filter_pos] = f.can_id;
@@ -430,7 +509,13 @@ static int _set_filter(candev_t *dev, const struct can_filter *filter)
         mailbox_index++;
     }
 
-    mcp2515_set_mode(dev_mcp, mode);
+    if(mutex_trylock(&mcp_mutex)) {
+        mcp2515_set_mode(dev_mcp, mode);
+        mutex_unlock(&mcp_mutex);
+    } else {
+        puts_P(PSTR("setfilt3_Failed to lock mutex"));
+        return -1;
+    }
 
     return filter_added;
 }
@@ -449,8 +534,15 @@ static int _remove_filter(candev_t *dev, const struct can_filter *filter)
         return -1; /* invalid mask */
     }
 
-    mode = mcp2515_get_mode(dev_mcp);
-    res = mcp2515_set_mode(dev_mcp, MODE_CONFIG);
+    if(mutex_trylock(&mcp_mutex)) {
+        mode = mcp2515_get_mode(dev_mcp);
+        res = mcp2515_set_mode(dev_mcp, MODE_CONFIG);
+        mutex_unlock(&mcp_mutex);
+    } else {
+        puts_P(PSTR("remfilt_Failed to lock mutex"));
+        return -1;
+    }
+
     if (res < 0) {
         return -1;
     }
@@ -477,9 +569,15 @@ static int _remove_filter(candev_t *dev, const struct can_filter *filter)
             /* filter id found */
             if (filter_pos < _max_filters(mailbox_index)) {
                 /* remove filter */
+                if(mutex_trylock(&mcp_mutex)) {
                 mcp2515_set_filter(dev_mcp,
                                    MCP2515_FILTERS_MB0 * mailbox_index + filter_pos,
                                    CAN_EFF_MASK);
+                    mutex_unlock(&mcp_mutex);
+                } else {
+                    puts_P(PSTR("remfilt2_Failed to lock mutex"));
+                    return -1;
+                }
                 /* save modification */
                 dev_mcp->filter_ids[mailbox_index][filter_pos] = 0;
 
@@ -504,7 +602,13 @@ static int _remove_filter(candev_t *dev, const struct can_filter *filter)
         }
         mailbox_index++;
     }
-    mcp2515_set_mode(dev_mcp, mode);
+    if(mutex_trylock(&mcp_mutex)) {
+        mcp2515_set_mode(dev_mcp, mode);
+        mutex_unlock(&mcp_mutex);
+    } else {
+        puts_P(PSTR("remfilt3_Failed to lock mutex"));
+        return -1;
+    }
 
     return filter_removed;
 }
@@ -513,9 +617,13 @@ static void _irq_rx(candev_mcp2515_t *dev, int box)
 {
     DEBUG("Inside mcp2515 rx irq, box=%d\n", box);
 
-    //mutex_lock(&mcp_mutex);
-    mcp2515_receive(dev, &dev->rx_buf[box], box);
-    //mutex_unlock(&mcp_mutex);
+    if(mutex_trylock(&mcp_mutex)) {
+        mcp2515_receive(dev, &dev->rx_buf[box], box);
+        mutex_unlock(&mcp_mutex);
+    } else {
+        puts_P(PSTR("irqrx_Failed to lock mutex"));
+        return;
+    }
 
     _send_event(dev, CANDEV_EVENT_RX_INDICATION, &dev->rx_buf[box]);
 }
@@ -535,7 +643,13 @@ static void _irq_error(candev_mcp2515_t *dev)
 
     DEBUG("Inside mcp2515 error irq\n");
 
-    err = mcp2515_get_errors(dev);
+    if(mutex_trylock(&mcp_mutex)) {
+        err = mcp2515_get_errors(dev);
+        mutex_unlock(&mcp_mutex);
+    } else {
+        puts_P(PSTR("erqerr_Failed to lock mutex"));
+        return;
+    }
 
     if (err & (ERR_WARNING | ERR_RX_WARNING | ERR_TX_WARNING)) {
         DEBUG("Error Warning\n");
@@ -572,7 +686,13 @@ static void _irq_message_error(candev_mcp2515_t *dev)
             DEBUG("Box: %d\n", box);
 
             //mutex_lock(&dev->tx_mutex);
-            mcp2515_abort(dev, box);
+            if(mutex_trylock(&mcp_mutex)) {
+                mcp2515_abort(dev, box);
+                mutex_unlock(&mcp_mutex);
+            } else {
+                puts_P(PSTR("irqmsg_Failed to lock mutex"));
+                return -1;
+            }
             xtimer_remove(&dev->tx_mailbox[box].timer);
             //mutex_unlock(&dev->tx_mutex);
 
